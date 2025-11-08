@@ -433,7 +433,8 @@ export function ItemDetailSheet({
               <div className="border-b pb-2 mb-4">
                 <h3 className="font-semibold text-lg">Basisdaten</h3>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
+                {/* ID on its own line */}
                 <div>
                   <Label htmlFor="iid">ID *</Label>
                   {isEditMode ? (
@@ -455,7 +456,8 @@ export function ItemDetailSheet({
                   )}
                 </div>
 
-                <div className="col-span-2">
+                {/* Name on its own line */}
+                <div>
                   <Label htmlFor="name">Name *</Label>
                   {isEditMode ? (
                     <Input
@@ -473,33 +475,37 @@ export function ItemDetailSheet({
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="brand">Marke</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="brand"
-                      {...form.register('brand')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{item?.brand || '—'}</p>
-                  )}
+                {/* Brand and Model together */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="brand">Marke</Label>
+                    {isEditMode ? (
+                      <Input
+                        id="brand"
+                        {...form.register('brand')}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 text-sm">{item?.brand || '—'}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="model">Modell</Label>
+                    {isEditMode ? (
+                      <Input
+                        id="model"
+                        {...form.register('model')}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 text-sm">{item?.model || '—'}</p>
+                    )}
+                  </div>
                 </div>
 
+                {/* Description on its own line */}
                 <div>
-                  <Label htmlFor="model">Modell</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="model"
-                      {...form.register('model')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{item?.model || '—'}</p>
-                  )}
-                </div>
-
-                <div className="col-span-2">
                   <Label htmlFor="description">Beschreibung</Label>
                   {isEditMode ? (
                     <Textarea

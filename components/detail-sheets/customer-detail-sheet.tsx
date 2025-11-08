@@ -383,7 +383,8 @@ export function CustomerDetailSheet({
                   <div className="border-b pb-1 mb-2">
                     <h3 className="font-semibold text-base">Basisdaten</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-3">
+                    {/* ID on its own line */}
                     <div>
                       <Label htmlFor="iid">ID *</Label>
                       <Input
@@ -399,56 +400,62 @@ export function CustomerDetailSheet({
                       )}
                     </div>
 
-                    <div>
-                      <Label htmlFor="firstname">Vorname *</Label>
-                      <Input
-                        id="firstname"
-                        {...form.register('firstname')}
-                        className="mt-1"
-                      />
-                      {form.formState.errors.firstname && (
-                        <p className="text-sm text-destructive mt-1">
-                          {form.formState.errors.firstname.message}
-                        </p>
-                      )}
+                    {/* Firstname and Lastname together */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="firstname">Vorname *</Label>
+                        <Input
+                          id="firstname"
+                          {...form.register('firstname')}
+                          className="mt-1"
+                        />
+                        {form.formState.errors.firstname && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.firstname.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="lastname">Nachname *</Label>
+                        <Input
+                          id="lastname"
+                          {...form.register('lastname')}
+                          className="mt-1"
+                        />
+                        {form.formState.errors.lastname && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.lastname.message}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
-                    <div>
-                      <Label htmlFor="lastname">Nachname *</Label>
-                      <Input
-                        id="lastname"
-                        {...form.register('lastname')}
-                        className="mt-1"
-                      />
-                      {form.formState.errors.lastname && (
-                        <p className="text-sm text-destructive mt-1">
-                          {form.formState.errors.lastname.message}
-                        </p>
-                      )}
-                    </div>
+                    {/* Email and Phone together */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="email">E-Mail</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          {...form.register('email')}
+                          className="mt-1"
+                        />
+                        {form.formState.errors.email && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.email.message}
+                          </p>
+                        )}
+                      </div>
 
-                    <div>
-                      <Label htmlFor="email">E-Mail</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        {...form.register('email')}
-                        className="mt-1"
-                      />
-                      {form.formState.errors.email && (
-                        <p className="text-sm text-destructive mt-1">
-                          {form.formState.errors.email.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone">Telefon</Label>
-                      <Input
-                        id="phone"
-                        {...form.register('phone')}
-                        className="mt-1"
-                      />
+                      <div>
+                        <Label htmlFor="phone">Telefon</Label>
+                        <Input
+                          id="phone"
+                          {...form.register('phone')}
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
                   </div>
                 </section>
