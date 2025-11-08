@@ -87,7 +87,7 @@ export function CordLabel({ item }: CordLabelProps) {
             textAlign: 'center',
             justifyContent: 'center',
             fontSize: '7pt',
-            fontFamily: 'Univers LT Std Condensed, sans-serif',
+            fontFamily: "'Univers LT Std', sans-serif",
             fontWeight: 400,
             lineHeight: '1',
             paddingTop: '3mm',
@@ -201,7 +201,7 @@ export function CordLabel({ item }: CordLabelProps) {
 
           }}>
             <span style={{
-              fontFamily: "'Univers LT Std Condensed', sans-serif",
+              fontFamily: "'Univers LT Std', sans-serif",
               fontSize: '10pt',
               hyphens: 'auto',
               fontWeight: 700,

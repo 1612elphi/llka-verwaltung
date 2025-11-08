@@ -72,7 +72,7 @@ export function DefaultLabel({ item }: DefaultLabelProps) {
           left: '3mm',
           bottom: '3mm',
           width: '42mm',
-          fontFamily: "'Univers LT Std Condensed', sans-serif",
+          fontFamily: "'Univers LT Std', sans-serif",
           fontSize: '11pt',
           fontWeight: 700,
           lineHeight: '1.1',
