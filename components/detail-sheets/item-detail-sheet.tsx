@@ -34,14 +34,15 @@ import { Badge } from '@/components/ui/badge';
 import { collections, pb } from '@/lib/pocketbase/client';
 import { formatDate, formatCurrency, calculateRentalStatus } from '@/lib/utils/formatting';
 import type { Item, ItemFormData, RentalExpanded, ItemCategory, ItemStatus, HighlightColor } from '@/types';
+import { CATEGORY_OPTIONS, GERMAN_CATEGORY_VALUES } from '@/lib/constants/categories';
 
-// Validation schema
+// Validation schema (using German category names as they are stored in PocketBase)
 const itemSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich'),
   brand: z.string().optional(),
   model: z.string().optional(),
   description: z.string().optional(),
-  category: z.array(z.enum(['kitchen', 'household', 'garden', 'kids', 'leisure', 'diy', 'other'])),
+  category: z.array(z.enum(['Küche', 'Haushalt', 'Garten', 'Kinder', 'Freizeit', 'Heimwerken', 'Sonstiges'])),
   deposit: z.number().min(0, 'Kaution muss positiv sein'),
   synonyms: z.string().optional(), // Comma-separated
   packaging: z.string().optional(),
@@ -313,16 +314,6 @@ export function ItemDetailSheet({
     return <Badge variant={variant}>{label}</Badge>;
   };
 
-  const categoryLabels = {
-    kitchen: 'Küche',
-    household: 'Haushalt',
-    garden: 'Garten',
-    kids: 'Kinder',
-    leisure: 'Freizeit',
-    diy: 'Heimwerken',
-    other: 'Sonstiges',
-  };
-
   return (
     <>
       <Sheet open={open} onOpenChange={(open) => {
@@ -468,7 +459,7 @@ export function ItemDetailSheet({
                       multiple
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[100px]"
                     >
-                      {Object.entries(categoryLabels).map(([value, label]) => (
+                      {CATEGORY_OPTIONS.map(({ value, label }) => (
                         <option key={value} value={value}>
                           {label}
                         </option>
@@ -479,7 +470,7 @@ export function ItemDetailSheet({
                       {item?.category && item.category.length > 0 ? (
                         item.category.map((cat) => (
                           <Badge key={cat} variant="secondary">
-                            {categoryLabels[cat as keyof typeof categoryLabels]}
+                            {cat}
                           </Badge>
                         ))
                       ) : (
