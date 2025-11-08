@@ -81,20 +81,16 @@ export function LabelPreview({ item, labelType, onLabelTypeChange }: LabelPrevie
         allowTaint: true,
         logging: false,
         onclone: (clonedDoc) => {
-          // Remove any inherited styles that might contain oklch colors
+          // Remove ALL style tags and link tags to avoid unsupported color functions
+          // The labels have all their styles inline, so this is safe
+          const styleElements = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
+          styleElements.forEach((el) => el.remove());
+
+          // Force simple colors on the cloned element
           const clonedElement = clonedDoc.querySelector('.label-print-area') as HTMLElement;
           if (clonedElement) {
-            // Force simple colors on the cloned element
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
-
-            // Remove any style elements that might have oklch colors
-            const styleElements = clonedDoc.querySelectorAll('style');
-            styleElements.forEach((style) => {
-              if (style.textContent?.includes('oklch')) {
-                style.remove();
-              }
-            });
           }
         },
       });
