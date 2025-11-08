@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { PlusIcon, CheckCircle2Icon } from 'lucide-react';
 import { SearchBar } from '@/components/search/search-bar';
 import { FilterPopover } from '@/components/search/filter-popover';
@@ -32,6 +32,7 @@ export default function ReservationsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<ReservationExpanded | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [hasInitializedFilter, setHasInitializedFilter] = useState(false);
 
   const observerTarget = useRef<HTMLDivElement>(null);
   const perPage = 50;
@@ -41,6 +42,29 @@ export default function ReservationsPage() {
     entity: 'reservations',
     config: reservationsFilterConfig,
   });
+
+  // Calculate today's date range
+  const todayRange = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+    return { start: todayStr, end: todayStr };
+  }, []);
+
+  // Initialize "today" filter on first load if no filters exist
+  useEffect(() => {
+    // Only run once and only if there are no active filters
+    if (!hasInitializedFilter && filters.activeFilters.length === 0) {
+      filters.addFilter({
+        type: 'date',
+        field: 'pickup',
+        operator: '>=',
+        value: [todayRange.start, todayRange.end],
+        label: 'Abholung: Heute',
+      });
+      setHasInitializedFilter(true);
+    }
+  }, [hasInitializedFilter, filters, todayRange]);
 
   // Sort management
   const [sortField, setSortField] = useState<string>(reservationsColumnConfig.defaultSort);
@@ -258,22 +282,22 @@ export default function ReservationsPage() {
                           />
                         </th>
                       )}
-                      {columnVisibility.isColumnVisible('customer_phone') && (
-                        <th className="px-4 py-2 text-left">
-                          <SortableHeader
-                            label="Telefon"
-                            sortDirection={getSortDirection('customer_phone')}
-                            onSort={() => handleSort('customer_phone')}
-                            disabled={isLoading}
-                          />
-                        </th>
-                      )}
                       {columnVisibility.isColumnVisible('items') && (
                         <th className="px-4 py-2 text-left">
                           <SortableHeader
                             label="Gegenstände"
                             sortDirection={getSortDirection('items')}
                             onSort={() => handleSort('items')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('customer_phone') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Telefon"
+                            sortDirection={getSortDirection('customer_phone')}
+                            onSort={() => handleSort('customer_phone')}
                             disabled={isLoading}
                           />
                         </th>
@@ -368,16 +392,16 @@ export default function ReservationsPage() {
                             </div>
                           </td>
                         )}
-                        {columnVisibility.isColumnVisible('customer_phone') && (
-                          <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {reservation.customer_phone || '—'}
-                          </td>
-                        )}
                         {columnVisibility.isColumnVisible('items') && (
                           <td className="px-4 py-3 text-sm">
                             {reservation.expand?.items?.length > 0
                               ? reservation.expand.items.map((item) => item.name).join(', ')
                               : `${reservation.items.length} Gegenstände`}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('customer_phone') && (
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {reservation.customer_phone || '—'}
                           </td>
                         )}
                         {columnVisibility.isColumnVisible('pickup') && (
