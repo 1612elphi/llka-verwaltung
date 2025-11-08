@@ -258,9 +258,9 @@ export function CustomerDetailSheet({
         }
       }}>
         <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
-          <SheetHeader className="border-b pb-6 mb-6">
-            <div className="flex items-start justify-between">
-              <div>
+          <SheetHeader className="border-b pb-6 mb-6 px-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-3 mb-2">
                   <SheetTitle className="text-2xl">
                     {isNewCustomer
@@ -287,6 +287,7 @@ export function CustomerDetailSheet({
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditMode(true)}
+                  className="shrink-0"
                 >
                   <PencilIcon className="size-4 mr-2" />
                   Bearbeiten
@@ -297,7 +298,7 @@ export function CustomerDetailSheet({
 
           {/* Quick Stats */}
           {!isNewCustomer && !isEditMode && (
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-3 gap-4 mb-6 px-6">
               <div className="border rounded-lg p-4 bg-muted/50">
                 <div className="text-sm font-medium text-muted-foreground mb-1">Aktive Leihvorgänge</div>
                 <div className="text-2xl font-bold">
@@ -319,7 +320,7 @@ export function CustomerDetailSheet({
             </div>
           )}
 
-          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-8 px-6">
             {/* Basic Information */}
             <section className="space-y-4">
               <div className="border-b pb-2 mb-4">
@@ -668,7 +669,7 @@ export function CustomerDetailSheet({
           </form>
 
           {isEditMode && (
-            <SheetFooter className="border-t pt-4">
+            <SheetFooter className="border-t pt-4 px-6">
               <Button
                 type="button"
                 variant="outline"
