@@ -5,11 +5,14 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { PlusIcon } from 'lucide-react';
 import { SearchBar } from '@/components/search/search-bar';
 import { FilterPopover } from '@/components/search/filter-popover';
 import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
 import { ColumnSelector } from '@/components/table/column-selector';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ReservationDetailSheet } from '@/components/detail-sheets/reservation-detail-sheet';
 import { collections } from '@/lib/pocketbase/client';
 import { useFilters } from '@/hooks/use-filters';
 import { useColumnVisibility } from '@/hooks/use-column-visibility';
@@ -27,6 +30,8 @@ export default function ReservationsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedReservation, setSelectedReservation] = useState<ReservationExpanded | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const observerTarget = useRef<HTMLDivElement>(null);
   const perPage = 50;
@@ -156,11 +161,35 @@ export default function ReservationsPage() {
     return sortField === field ? 'asc' : sortField === `-${field}` ? 'desc' : null;
   };
 
+  // Handle row click to open detail sheet
+  const handleRowClick = (reservation: ReservationExpanded) => {
+    setSelectedReservation(reservation);
+    setIsSheetOpen(true);
+  };
+
+  // Handle new reservation button
+  const handleNewReservation = () => {
+    setSelectedReservation(null);
+    setIsSheetOpen(true);
+  };
+
+  // Handle reservation save
+  const handleReservationSave = () => {
+    // Refresh the list
+    setReservations([]);
+    setCurrentPage(1);
+    fetchReservations(1);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
       <div className="border-b-2 border-primary bg-background p-4">
         <div className="flex gap-2">
+          <Button onClick={handleNewReservation} size="sm">
+            <PlusIcon className="size-4 mr-2" />
+            Neu
+          </Button>
           <FilterPopover
             open={filters.isFilterPopoverOpen}
             onOpenChange={filters.setIsFilterPopoverOpen}
@@ -315,7 +344,8 @@ export default function ReservationsPage() {
                     {reservations.map((reservation) => (
                       <tr
                         key={reservation.id}
-                        className="border-b hover:bg-muted/50 transition-colors"
+                        onClick={() => handleRowClick(reservation)}
+                        className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
                       >
                         {columnVisibility.isColumnVisible('customer_name') && (
                           <td className="px-4 py-3">
@@ -406,6 +436,14 @@ export default function ReservationsPage() {
           </>
         )}
       </div>
+
+      {/* Reservation Detail Sheet */}
+      <ReservationDetailSheet
+        reservation={selectedReservation}
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        onSave={handleReservationSave}
+      />
     </div>
   );
 }
