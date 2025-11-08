@@ -77,7 +77,8 @@ export function ActiveRentalsSection({ onRentalReturned }: ActiveRentalsSectionP
       : 'Unbekannt';
 
     const itemCount = rental.items?.length || 0;
-    const dueDate = rental.extended_on || rental.expected_on;
+    // Use expected_on for due date (extended_on is now just a timestamp of when extension was made)
+    const dueDate = rental.expected_on;
 
     // Get first item info
     const firstItem = rental.expand?.items?.[0];
