@@ -122,7 +122,7 @@ export function ItemDetailSheet({
         brand: item.brand || '',
         model: item.model || '',
         description: item.description || '',
-        category: item.category as ItemCategory[],
+        category: item.category as any, // Database stores German strings, not enum values
         deposit: item.deposit,
         synonyms: Array.isArray(item.synonyms) ? item.synonyms.join(', ') : '',
         packaging: item.packaging || '',
@@ -1015,7 +1015,12 @@ export function ItemDetailSheet({
                       </thead>
                       <tbody className="divide-y">
                         {rentals.slice(0, 5).map((rental) => {
-                          const status = calculateRentalStatus(rental);
+                          const status = calculateRentalStatus(
+                            rental.rented_on,
+                            rental.returned_on,
+                            rental.expected_on,
+                            rental.extended_on
+                          );
                           return (
                             <tr key={rental.id} className="hover:bg-muted/30">
                               <td className="px-4 py-3 text-sm">
