@@ -259,8 +259,8 @@ export function CustomerDetailSheet({
           onOpenChange(open);
         }
       }}>
-        <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
-          <SheetHeader className="border-b pb-6 mb-6 px-6">
+        <SheetContent className="w-full sm:max-w-4xl flex flex-col overflow-hidden">
+          <SheetHeader className="border-b pb-6 mb-6 px-6 shrink-0">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-3 mb-2">
@@ -284,22 +284,12 @@ export function CustomerDetailSheet({
                   </div>
                 )}
               </div>
-              {!isNewCustomer && !isEditMode && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditMode(true)}
-                  className="shrink-0"
-                >
-                  <PencilIcon className="size-4 mr-2" />
-                  Bearbeiten
-                </Button>
-              )}
             </div>
           </SheetHeader>
 
-          {/* Quick Stats */}
-          {!isNewCustomer && !isEditMode && (
+          <div className="flex-1 overflow-y-auto">
+            {/* Quick Stats */}
+            {!isNewCustomer && !isEditMode && (
             <div className="grid grid-cols-3 gap-4 mb-6 px-6">
               <div className="border rounded-lg p-4 bg-muted/50">
                 <div className="text-sm font-medium text-muted-foreground mb-1">Aktive Leihvorgänge</div>
@@ -730,9 +720,10 @@ export function CustomerDetailSheet({
               </section>
             )}
           </form>
+          </div>
 
-          {isEditMode && (
-            <SheetFooter className="border-t pt-4 px-6">
+          {isEditMode ? (
+            <SheetFooter className="border-t pt-4 px-6 shrink-0 bg-background">
               <Button
                 type="button"
                 variant="outline"
@@ -749,6 +740,16 @@ export function CustomerDetailSheet({
               >
                 <SaveIcon className="size-4 mr-2" />
                 {isLoading ? 'Speichern...' : 'Speichern'}
+              </Button>
+            </SheetFooter>
+          ) : !isNewCustomer && (
+            <SheetFooter className="border-t pt-4 px-6 shrink-0 bg-background">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditMode(true)}
+              >
+                <PencilIcon className="size-4 mr-2" />
+                Bearbeiten
               </Button>
             </SheetFooter>
           )}

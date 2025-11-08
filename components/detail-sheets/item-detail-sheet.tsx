@@ -351,28 +351,6 @@ export function ItemDetailSheet({
                   </div>
                 )}
               </div>
-              {!isNewItem && !isEditMode && (
-                <div className="flex gap-2 shrink-0">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => setIsRentalSheetOpen(true)}
-                    disabled={item?.status !== 'instock'}
-                    title={item?.status !== 'instock' ? 'Artikel ist nicht verfügbar' : 'Ausleihen'}
-                  >
-                    <PlusCircleIcon className="size-4 mr-2" />
-                    Ausleihen
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditMode(true)}
-                  >
-                    <PencilIcon className="size-4 mr-2" />
-                    Bearbeiten
-                  </Button>
-                </div>
-              )}
             </div>
           </SheetHeader>
 
@@ -856,7 +834,7 @@ export function ItemDetailSheet({
           </form>
           </div>
 
-          {isEditMode && (
+          {isEditMode ? (
             <SheetFooter className="border-t pt-4 px-6 shrink-0 bg-background">
               <Button
                 type="button"
@@ -874,6 +852,25 @@ export function ItemDetailSheet({
               >
                 <SaveIcon className="size-4 mr-2" />
                 {isLoading ? 'Speichern...' : 'Speichern'}
+              </Button>
+            </SheetFooter>
+          ) : !isNewItem && (
+            <SheetFooter className="border-t pt-4 px-6 shrink-0 bg-background">
+              <Button
+                variant="default"
+                onClick={() => setIsRentalSheetOpen(true)}
+                disabled={item?.status !== 'instock'}
+                title={item?.status !== 'instock' ? 'Artikel ist nicht verfügbar' : 'Ausleihen'}
+              >
+                <PlusCircleIcon className="size-4 mr-2" />
+                Ausleihen
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditMode(true)}
+              >
+                <PencilIcon className="size-4 mr-2" />
+                Bearbeiten
               </Button>
             </SheetFooter>
           )}
