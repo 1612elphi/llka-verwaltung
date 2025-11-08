@@ -181,6 +181,10 @@ export function ReservationDetailSheet({
   const handleSave = async (data: ReservationFormValues) => {
     setIsLoading(true);
     try {
+      // Convert datetime-local format (YYYY-MM-DDTHH:MM) to ISO 8601 with seconds
+      const pickupDate = new Date(data.pickup);
+      const pickupISO = pickupDate.toISOString();
+
       const formData: Partial<Reservation> = {
         customer_iid: data.is_new_customer ? undefined : data.customer_iid,
         customer_name: data.customer_name,
@@ -188,7 +192,7 @@ export function ReservationDetailSheet({
         customer_email: data.customer_email || undefined,
         is_new_customer: data.is_new_customer,
         items: data.item_ids,
-        pickup: data.pickup,
+        pickup: pickupISO,
         comments: data.comments || undefined,
         done: data.done,
       };
