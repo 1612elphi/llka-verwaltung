@@ -5,11 +5,14 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { PlusIcon } from 'lucide-react';
 import { SearchBar } from '@/components/search/search-bar';
 import { FilterPopover } from '@/components/search/filter-popover';
 import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
 import { ColumnSelector } from '@/components/table/column-selector';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { RentalDetailSheet } from '@/components/detail-sheets/rental-detail-sheet';
 import { collections } from '@/lib/pocketbase/client';
 import { useFilters } from '@/hooks/use-filters';
 import { useColumnVisibility } from '@/hooks/use-column-visibility';
@@ -28,6 +31,8 @@ export default function RentalsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedRental, setSelectedRental] = useState<RentalExpanded | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const observerTarget = useRef<HTMLDivElement>(null);
   const perPage = 50;
@@ -157,11 +162,35 @@ export default function RentalsPage() {
     return sortField === field ? 'asc' : sortField === `-${field}` ? 'desc' : null;
   };
 
+  // Handle row click to open detail sheet
+  const handleRowClick = (rental: RentalExpanded) => {
+    setSelectedRental(rental);
+    setIsSheetOpen(true);
+  };
+
+  // Handle new rental button
+  const handleNewRental = () => {
+    setSelectedRental(null);
+    setIsSheetOpen(true);
+  };
+
+  // Handle rental save
+  const handleRentalSave = () => {
+    // Refresh the list
+    setRentals([]);
+    setCurrentPage(1);
+    fetchRentals(1);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
       <div className="border-b-2 border-primary bg-background p-4">
         <div className="flex gap-2">
+          <Button onClick={handleNewRental} size="sm">
+            <PlusIcon className="size-4 mr-2" />
+            Neu
+          </Button>
           <FilterPopover
             open={filters.isFilterPopoverOpen}
             onOpenChange={filters.setIsFilterPopoverOpen}
@@ -355,7 +384,8 @@ export default function RentalsPage() {
                       return (
                         <tr
                           key={rental.id}
-                          className="border-b hover:bg-muted/50 transition-colors"
+                          onClick={() => handleRowClick(rental)}
+                          className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
                           style={{ backgroundColor: statusColor }}
                         >
                           {columnVisibility.isColumnVisible('customer') && (
@@ -459,6 +489,14 @@ export default function RentalsPage() {
           </>
         )}
       </div>
+
+      {/* Rental Detail Sheet */}
+      <RentalDetailSheet
+        rental={selectedRental}
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        onSave={handleRentalSave}
+      />
     </div>
   );
 }

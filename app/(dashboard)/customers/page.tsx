@@ -5,10 +5,13 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { PlusIcon } from 'lucide-react';
 import { SearchBar } from '@/components/search/search-bar';
 import { FilterPopover } from '@/components/search/filter-popover';
 import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
 import { ColumnSelector } from '@/components/table/column-selector';
+import { Button } from '@/components/ui/button';
+import { CustomerDetailSheet } from '@/components/detail-sheets/customer-detail-sheet';
 import { collections } from '@/lib/pocketbase/client';
 import { useFilters } from '@/hooks/use-filters';
 import { useColumnVisibility } from '@/hooks/use-column-visibility';
@@ -25,6 +28,8 @@ export default function CustomersPage() {
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const observerTarget = useRef<HTMLDivElement>(null);
   const perPage = 50;
@@ -153,11 +158,35 @@ export default function CustomersPage() {
     return sortField === field ? 'asc' : sortField === `-${field}` ? 'desc' : null;
   };
 
+  // Handle row click to open detail sheet
+  const handleRowClick = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsSheetOpen(true);
+  };
+
+  // Handle new customer button
+  const handleNewCustomer = () => {
+    setSelectedCustomer(null);
+    setIsSheetOpen(true);
+  };
+
+  // Handle customer save
+  const handleCustomerSave = (savedCustomer: Customer) => {
+    // Refresh the list
+    setCustomers([]);
+    setCurrentPage(1);
+    fetchCustomers(1);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
       <div className="border-b-2 border-primary bg-background p-4">
         <div className="flex gap-2">
+          <Button onClick={handleNewCustomer} size="sm">
+            <PlusIcon className="size-4 mr-2" />
+            Neu
+          </Button>
           <FilterPopover
             open={filters.isFilterPopoverOpen}
             onOpenChange={filters.setIsFilterPopoverOpen}
@@ -341,7 +370,8 @@ export default function CustomersPage() {
                   {customers.map((customer) => (
                     <tr
                       key={customer.id}
-                      className="border-b hover:bg-muted/50 transition-colors"
+                      onClick={() => handleRowClick(customer)}
+                      className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
                     >
                       {columnVisibility.isColumnVisible('iid') && (
                         <td className="px-4 py-3 font-mono text-sm">
@@ -436,6 +466,14 @@ export default function CustomersPage() {
             </>
           )}
       </div>
+
+      {/* Customer Detail Sheet */}
+      <CustomerDetailSheet
+        customer={selectedCustomer}
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        onSave={handleCustomerSave}
+      />
     </div>
   );
 }
