@@ -39,6 +39,7 @@ import { RentalDetailSheet } from './rental-detail-sheet';
 
 // Validation schema (using German category names as they are stored in PocketBase)
 const itemSchema = z.object({
+  iid: z.number().int().min(1, 'ID muss mindestens 1 sein'),
   name: z.string().min(1, 'Name ist erforderlich'),
   brand: z.string().optional(),
   model: z.string().optional(),
@@ -91,6 +92,7 @@ export function ItemDetailSheet({
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
     defaultValues: {
+      iid: 1,
       name: '',
       brand: '',
       model: '',
@@ -115,6 +117,7 @@ export function ItemDetailSheet({
   useEffect(() => {
     if (item) {
       form.reset({
+        iid: item.iid,
         name: item.name,
         brand: item.brand || '',
         model: item.model || '',
@@ -137,23 +140,52 @@ export function ItemDetailSheet({
       setImagesToDelete([]);
       setIsEditMode(false);
     } else if (isNewItem) {
-      form.reset({
-        name: '',
-        brand: '',
-        model: '',
-        description: '',
-        category: [],
-        deposit: 0,
-        synonyms: '',
-        packaging: '',
-        manual: '',
-        parts: '',
-        copies: 1,
-        status: 'instock',
-        highlight_color: '',
-        internal_note: '',
-        added_on: new Date().toISOString().split('T')[0],
-      });
+      // Fetch next available IID for new items
+      const fetchNextIid = async () => {
+        try {
+          const lastItem = await collections.items().getFirstListItem('', { sort: '-iid' });
+          const nextIid = (lastItem?.iid || 0) + 1;
+          form.reset({
+            iid: nextIid,
+            name: '',
+            brand: '',
+            model: '',
+            description: '',
+            category: [],
+            deposit: 0,
+            synonyms: '',
+            packaging: '',
+            manual: '',
+            parts: '',
+            copies: 1,
+            status: 'instock',
+            highlight_color: '',
+            internal_note: '',
+            added_on: new Date().toISOString().split('T')[0],
+          });
+        } catch (err) {
+          // If no items exist yet, start with 1
+          form.reset({
+            iid: 1,
+            name: '',
+            brand: '',
+            model: '',
+            description: '',
+            category: [],
+            deposit: 0,
+            synonyms: '',
+            packaging: '',
+            manual: '',
+            parts: '',
+            copies: 1,
+            status: 'instock',
+            highlight_color: '',
+            internal_note: '',
+            added_on: new Date().toISOString().split('T')[0],
+          });
+        }
+      };
+      fetchNextIid();
       setExistingImages([]);
       setNewImages([]);
       setImagesToDelete([]);
@@ -211,6 +243,7 @@ export function ItemDetailSheet({
       const formData = new FormData();
 
       // Add all text fields
+      formData.append('iid', data.iid.toString());
       formData.append('name', data.name);
       if (data.brand) formData.append('brand', data.brand);
       if (data.model) formData.append('model', data.model);
@@ -401,6 +434,27 @@ export function ItemDetailSheet({
                 <h3 className="font-semibold text-lg">Basisdaten</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="iid">ID *</Label>
+                  {isEditMode ? (
+                    <Input
+                      id="iid"
+                      type="number"
+                      {...form.register('iid', { valueAsNumber: true })}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm font-mono font-semibold">
+                      #{String(item?.iid).padStart(4, '0')}
+                    </p>
+                  )}
+                  {form.formState.errors.iid && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.iid.message}
+                    </p>
+                  )}
+                </div>
+
                 <div className="col-span-2">
                   <Label htmlFor="name">Name *</Label>
                   {isEditMode ? (

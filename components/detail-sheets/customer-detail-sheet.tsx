@@ -37,6 +37,7 @@ import type { Customer, CustomerFormData, Rental, RentalExpanded, Reservation, R
 
 // Validation schema
 const customerSchema = z.object({
+  iid: z.number().int().min(1, 'ID muss mindestens 1 sein'),
   firstname: z.string().min(1, 'Vorname ist erforderlich'),
   lastname: z.string().min(1, 'Nachname ist erforderlich'),
   email: z.string().email('Ungültige E-Mail-Adresse').optional().or(z.literal('')),
@@ -81,6 +82,7 @@ export function CustomerDetailSheet({
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
+      iid: 1,
       firstname: '',
       lastname: '',
       email: '',
@@ -103,6 +105,7 @@ export function CustomerDetailSheet({
   useEffect(() => {
     if (customer) {
       form.reset({
+        iid: customer.iid,
         firstname: customer.firstname,
         lastname: customer.lastname,
         email: customer.email || '',
@@ -119,21 +122,48 @@ export function CustomerDetailSheet({
       });
       setIsEditMode(false);
     } else if (isNewCustomer) {
-      form.reset({
-        firstname: '',
-        lastname: '',
-        email: '',
-        phone: '',
-        street: '',
-        postal_code: '',
-        city: '',
-        registered_on: new Date().toISOString().split('T')[0],
-        renewed_on: '',
-        heard: '',
-        newsletter: false,
-        remark: '',
-        highlight_color: '',
-      });
+      // Fetch next available IID for new customers
+      const fetchNextIid = async () => {
+        try {
+          const lastCustomer = await collections.customers().getFirstListItem('', { sort: '-iid' });
+          const nextIid = (lastCustomer?.iid || 0) + 1;
+          form.reset({
+            iid: nextIid,
+            firstname: '',
+            lastname: '',
+            email: '',
+            phone: '',
+            street: '',
+            postal_code: '',
+            city: '',
+            registered_on: new Date().toISOString().split('T')[0],
+            renewed_on: '',
+            heard: '',
+            newsletter: false,
+            remark: '',
+            highlight_color: '',
+          });
+        } catch (err) {
+          // If no customers exist yet, start with 1
+          form.reset({
+            iid: 1,
+            firstname: '',
+            lastname: '',
+            email: '',
+            phone: '',
+            street: '',
+            postal_code: '',
+            city: '',
+            registered_on: new Date().toISOString().split('T')[0],
+            renewed_on: '',
+            heard: '',
+            newsletter: false,
+            remark: '',
+            highlight_color: '',
+          });
+        }
+      };
+      fetchNextIid();
       setIsEditMode(true);
     }
   }, [customer, isNewCustomer, form]);
@@ -176,6 +206,7 @@ export function CustomerDetailSheet({
     setIsLoading(true);
     try {
       const formData: Partial<Customer> = {
+        iid: data.iid,
         firstname: data.firstname,
         lastname: data.lastname,
         email: data.email || undefined,
@@ -353,6 +384,21 @@ export function CustomerDetailSheet({
                     <h3 className="font-semibold text-base">Basisdaten</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="iid">ID *</Label>
+                      <Input
+                        id="iid"
+                        type="number"
+                        {...form.register('iid', { valueAsNumber: true })}
+                        className="mt-1"
+                      />
+                      {form.formState.errors.iid && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.iid.message}
+                        </p>
+                      )}
+                    </div>
+
                     <div>
                       <Label htmlFor="firstname">Vorname *</Label>
                       <Input
