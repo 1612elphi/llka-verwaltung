@@ -110,7 +110,7 @@ export function ItemDetailSheet({
         description: item.description || '',
         category: item.category as ItemCategory[],
         deposit: item.deposit,
-        synonyms: item.synonyms?.join(', ') || '',
+        synonyms: Array.isArray(item.synonyms) ? item.synonyms.join(', ') : '',
         packaging: item.packaging || '',
         manual: item.manual || '',
         parts: item.parts || '',
