@@ -5,6 +5,7 @@
 'use client';
 
 import { Navbar } from '@/components/layout/navbar';
+import { GlobalCommandMenu } from '@/components/search/global-command-menu';
 import { useRequireAuth } from '@/hooks/use-auth';
 
 export default function DashboardLayout({
@@ -31,6 +32,7 @@ export default function DashboardLayout({
       <main className="flex-1 overflow-y-auto pt-16">
         {children}
       </main>
+      <GlobalCommandMenu />
     </div>
   );
 }

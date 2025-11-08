@@ -4,50 +4,191 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { SearchBar } from '@/components/search/search-bar';
+import { FilterPopover } from '@/components/search/filter-popover';
+import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
+import { ColumnSelector } from '@/components/table/column-selector';
 import { collections } from '@/lib/pocketbase/client';
+import { useFilters } from '@/hooks/use-filters';
+import { useColumnVisibility } from '@/hooks/use-column-visibility';
+import { customersFilterConfig } from '@/lib/filters/filter-configs';
+import { customersColumnConfig } from '@/lib/tables/column-configs';
 import type { Customer } from '@/types';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const perPage = 50;
+
+  // Filter management
+  const filters = useFilters({
+    entity: 'customers',
+    config: customersFilterConfig,
+  });
+
+  // Sort management
+  const [sortField, setSortField] = useState<string>(customersColumnConfig.defaultSort);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+
+  // Column visibility management
+  const columnVisibility = useColumnVisibility({
+    entity: 'customers',
+    config: customersColumnConfig,
+  });
+
+  // Debounce search input
   useEffect(() => {
-    async function fetchCustomers() {
-      try {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset pagination when search, filters, or sort change
+  useEffect(() => {
+    setCustomers([]);
+    setCurrentPage(1);
+    setHasMore(true);
+  }, [debouncedSearch, filters.activeFilters, sortField]);
+
+  const fetchCustomers = useCallback(async (page: number) => {
+    try {
+      const isInitialLoad = page === 1;
+      if (isInitialLoad) {
         setIsLoading(true);
-        const result = await collections.customers().getList<Customer>(1, 50, {
-          sort: '-created',
-        });
-        setCustomers(result.items);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching customers:', err);
-        setError(
-          err instanceof Error ? err.message : 'Fehler beim Laden der Kund:innen'
-        );
-      } finally {
-        setIsLoading(false);
+      } else {
+        setIsLoadingMore(true);
       }
+
+      // Build server-side filter from search and active filters
+      const filter = filters.buildFilter(debouncedSearch);
+
+      const result = await collections.customers().getList<Customer>(
+        page,
+        perPage,
+        {
+          sort: sortField,
+          filter,
+          skipTotal: true, // Performance optimization
+        }
+      );
+
+      if (isInitialLoad) {
+        setCustomers(result.items);
+      } else {
+        setCustomers((prev) => [...prev, ...result.items]);
+      }
+
+      setHasMore(result.items.length === perPage);
+      setCurrentPage(page + 1);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+      setError(
+        err instanceof Error ? err.message : 'Fehler beim Laden der Kund:innen'
+      );
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [debouncedSearch, filters.buildFilter, sortField, perPage]);
+
+  // Initial load and reload on search change
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchCustomers(1);
+  }, [debouncedSearch, fetchCustomers]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
+          fetchCustomers(currentPage);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
     }
 
-    fetchCustomers();
-  }, []);
+    return () => observer.disconnect();
+  }, [fetchCustomers, currentPage, hasMore, isLoading, isLoadingMore]);
+
+  // Handle column sort
+  const handleSort = (columnId: string) => {
+    const column = customersColumnConfig.columns.find((c) => c.id === columnId);
+    if (!column || !column.sortable) return;
+
+    const field = column.sortField || columnId;
+
+    // Toggle sort direction
+    if (sortColumn === columnId) {
+      // Currently sorting by this column, toggle direction
+      setSortField(sortField.startsWith('-') ? field : `-${field}`);
+    } else {
+      // New column, start with ascending
+      setSortColumn(columnId);
+      setSortField(field);
+    }
+  };
+
+  // Get sort direction for a column
+  const getSortDirection = (columnId: string): SortDirection => {
+    if (sortColumn !== columnId) return null;
+    const column = customersColumnConfig.columns.find((c) => c.id === columnId);
+    const field = column?.sortField || columnId;
+    return sortField === field ? 'asc' : sortField === `-${field}` ? 'desc' : null;
+  };
 
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="border-b-2 border-primary bg-background p-4 flex items-center gap-4">
-        <Input
-          placeholder="Kund:innen suchen..."
-          className="max-w-md"
-          disabled
-        />
-        <span className="text-sm text-muted-foreground ml-auto">
-          {customers.length} Kund:innen
-        </span>
+      <div className="border-b-2 border-primary bg-background p-4">
+        <div className="flex gap-2">
+          <FilterPopover
+            open={filters.isFilterPopoverOpen}
+            onOpenChange={filters.setIsFilterPopoverOpen}
+            dateFilters={customersFilterConfig.dateFilters}
+            categoryFilters={customersFilterConfig.categoryFilters}
+            activeFilters={filters.activeFilters}
+            onAddFilter={filters.addFilter}
+            onRemoveFilter={filters.removeFilter}
+            onClearAll={filters.clearAllFilters}
+          >
+            <div className="flex-1">
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Kund:innen suchen..."
+                disabled={isLoading}
+                filters={filters.activeFilters}
+                onRemoveFilter={filters.removeFilter}
+                onFilterClick={filters.toggleFilterPopover}
+                filterCount={filters.filterCount}
+              />
+            </div>
+          </FilterPopover>
+          <ColumnSelector
+            columns={customersColumnConfig.columns}
+            visibleColumns={columnVisibility.visibleColumns}
+            onToggle={columnVisibility.toggleColumn}
+            onReset={columnVisibility.resetColumns}
+            hiddenCount={columnVisibility.hiddenCount}
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -65,52 +206,234 @@ export default function CustomersPage() {
             </div>
           ) : customers.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">Keine Kund:innen gefunden</p>
+              <p className="text-muted-foreground">
+                {debouncedSearch ? 'Keine Ergebnisse gefunden' : 'Keine Kund:innen gefunden'}
+              </p>
             </div>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-primary">
-                  <th className="px-4 py-2 text-left font-bold">ID</th>
-                  <th className="px-4 py-2 text-left font-bold">Name</th>
-                  <th className="px-4 py-2 text-left font-bold">Email</th>
-                  <th className="px-4 py-2 text-left font-bold">Telefon</th>
-                  <th className="px-4 py-2 text-left font-bold">Stadt</th>
-                  <th className="px-4 py-2 text-left font-bold">
-                    Registriert
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {customers.map((customer) => (
-                  <tr
-                    key={customer.id}
-                    className="border-b hover:bg-muted/50 transition-colors"
-                  >
-                    <td className="px-4 py-3 font-mono text-sm">
-                      {customer.iid}
-                    </td>
-                    <td className="px-4 py-3">
-                      {customer.firstname} {customer.lastname}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {customer.email || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {customer.phone || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {customer.city || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {new Date(customer.registered_on).toLocaleDateString(
-                        'de-DE'
-                      )}
-                    </td>
+            <>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-primary">
+                    {columnVisibility.isColumnVisible('iid') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="ID"
+                          sortDirection={getSortDirection('iid')}
+                          onSort={() => handleSort('iid')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('name') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Name"
+                          sortDirection={getSortDirection('name')}
+                          onSort={() => handleSort('name')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('email') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Email"
+                          sortDirection={getSortDirection('email')}
+                          onSort={() => handleSort('email')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('phone') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Telefon"
+                          sortDirection={getSortDirection('phone')}
+                          onSort={() => handleSort('phone')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('street') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Straße"
+                          sortDirection={getSortDirection('street')}
+                          onSort={() => handleSort('street')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('postal_code') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="PLZ"
+                          sortDirection={getSortDirection('postal_code')}
+                          onSort={() => handleSort('postal_code')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('city') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Stadt"
+                          sortDirection={getSortDirection('city')}
+                          onSort={() => handleSort('city')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('registered_on') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Registriert"
+                          sortDirection={getSortDirection('registered_on')}
+                          onSort={() => handleSort('registered_on')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('renewed_on') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Verlängert"
+                          sortDirection={getSortDirection('renewed_on')}
+                          onSort={() => handleSort('renewed_on')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('heard') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Gehört über"
+                          sortDirection={getSortDirection('heard')}
+                          onSort={() => handleSort('heard')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('newsletter') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Newsletter"
+                          sortDirection={getSortDirection('newsletter')}
+                          onSort={() => handleSort('newsletter')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('remark') && (
+                      <th className="px-4 py-2 text-left">
+                        <SortableHeader
+                          label="Bemerkung"
+                          sortDirection={getSortDirection('remark')}
+                          onSort={() => handleSort('remark')}
+                          disabled={isLoading}
+                        />
+                      </th>
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {customers.map((customer) => (
+                    <tr
+                      key={customer.id}
+                      className="border-b hover:bg-muted/50 transition-colors"
+                    >
+                      {columnVisibility.isColumnVisible('iid') && (
+                        <td className="px-4 py-3 font-mono text-sm">
+                          {String(customer.iid).padStart(4, '0')}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('name') && (
+                        <td className="px-4 py-3">
+                          {customer.firstname} {customer.lastname}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('email') && (
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {customer.email || '—'}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('phone') && (
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {customer.phone || '—'}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('street') && (
+                        <td className="px-4 py-3 text-sm">
+                          {customer.street || '—'}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('postal_code') && (
+                        <td className="px-4 py-3 text-sm">
+                          {customer.postal_code || '—'}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('city') && (
+                        <td className="px-4 py-3 text-sm">
+                          {customer.city || '—'}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('registered_on') && (
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {new Date(customer.registered_on).toLocaleDateString(
+                            'de-DE'
+                          )}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('renewed_on') && (
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {customer.renewed_on
+                            ? new Date(customer.renewed_on).toLocaleDateString('de-DE')
+                            : '—'}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('heard') && (
+                        <td className="px-4 py-3 text-sm">
+                          {customer.heard || '—'}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('newsletter') && (
+                        <td className="px-4 py-3 text-sm">
+                          {customer.newsletter ? 'Ja' : 'Nein'}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('remark') && (
+                        <td className="px-4 py-3 text-sm">
+                          {customer.remark || '—'}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Infinite scroll trigger */}
+              <div ref={observerTarget} className="h-4" />
+
+              {/* Loading more indicator */}
+              {isLoadingMore && (
+                <div className="flex items-center justify-center py-4">
+                  <div className="h-6 w-6 animate-spin border-4 border-primary border-t-transparent" />
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    Lädt mehr...
+                  </span>
+                </div>
+              )}
+
+              {/* End of results */}
+              {!hasMore && customers.length > 0 && (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">
+                    Alle Kund:innen geladen
+                  </p>
+                </div>
+              )}
+            </>
           )}
       </div>
     </div>

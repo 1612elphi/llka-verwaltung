@@ -4,10 +4,17 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { SearchBar } from '@/components/search/search-bar';
+import { FilterPopover } from '@/components/search/filter-popover';
+import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
+import { ColumnSelector } from '@/components/table/column-selector';
 import { Badge } from '@/components/ui/badge';
 import { collections } from '@/lib/pocketbase/client';
+import { useFilters } from '@/hooks/use-filters';
+import { useColumnVisibility } from '@/hooks/use-column-visibility';
+import { rentalsFilterConfig } from '@/lib/filters/filter-configs';
+import { rentalsColumnConfig } from '@/lib/tables/column-configs';
 import type { RentalExpanded } from '@/types';
 import { formatDate, calculateRentalStatus } from '@/lib/utils/formatting';
 import { getRentalStatusLabel, RENTAL_STATUS_COLORS } from '@/lib/constants/statuses';
@@ -15,43 +22,178 @@ import { getRentalStatusLabel, RENTAL_STATUS_COLORS } from '@/lib/constants/stat
 export default function RentalsPage() {
   const [rentals, setRentals] = useState<RentalExpanded[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const perPage = 50;
+
+  // Filter management
+  const filters = useFilters({
+    entity: 'rentals',
+    config: rentalsFilterConfig,
+  });
+
+  // Sort management
+  const [sortField, setSortField] = useState<string>(rentalsColumnConfig.defaultSort);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+
+  // Column visibility management
+  const columnVisibility = useColumnVisibility({
+    entity: 'rentals',
+    config: rentalsColumnConfig,
+  });
+
+  // Debounce search input
   useEffect(() => {
-    async function fetchRentals() {
-      try {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset pagination when search, filters, or sort change
+  useEffect(() => {
+    setRentals([]);
+    setCurrentPage(1);
+    setHasMore(true);
+  }, [debouncedSearch, filters.activeFilters, sortField]);
+
+  const fetchRentals = useCallback(async (page: number) => {
+    try {
+      const isInitialLoad = page === 1;
+      if (isInitialLoad) {
         setIsLoading(true);
-        const result = await collections.rentals().getList<RentalExpanded>(1, 50, {
-          sort: '-created',
-          expand: 'customer,items',
-        });
-        setRentals(result.items);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching rentals:', err);
-        setError(
-          err instanceof Error ? err.message : 'Fehler beim Laden der Leihvorgänge'
-        );
-      } finally {
-        setIsLoading(false);
+      } else {
+        setIsLoadingMore(true);
       }
+
+      // Build server-side filter from search and active filters
+      const filter = filters.buildFilter(debouncedSearch);
+
+      const result = await collections.rentals().getList<RentalExpanded>(
+        page,
+        perPage,
+        {
+          sort: sortField,
+          expand: 'customer,items',
+          filter,
+          skipTotal: true,
+        }
+      );
+
+      if (isInitialLoad) {
+        setRentals(result.items);
+      } else {
+        setRentals((prev) => [...prev, ...result.items]);
+      }
+
+      setHasMore(result.items.length === perPage);
+      setCurrentPage(page + 1);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching rentals:', err);
+      setError(
+        err instanceof Error ? err.message : 'Fehler beim Laden der Leihvorgänge'
+      );
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [debouncedSearch, filters.buildFilter, sortField, perPage]);
+
+  // Initial load and reload on search change
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchRentals(1);
+  }, [debouncedSearch, fetchRentals]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
+          fetchRentals(currentPage);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
     }
 
-    fetchRentals();
-  }, []);
+    return () => observer.disconnect();
+  }, [fetchRentals, currentPage, hasMore, isLoading, isLoadingMore]);
+
+  // Handle column sort
+  const handleSort = (columnId: string) => {
+    const column = rentalsColumnConfig.columns.find((c) => c.id === columnId);
+    if (!column || !column.sortable) return;
+
+    const field = column.sortField || columnId;
+
+    // Toggle sort direction
+    if (sortColumn === columnId) {
+      // Currently sorting by this column, toggle direction
+      setSortField(sortField.startsWith('-') ? field : `-${field}`);
+    } else {
+      // New column, start with ascending
+      setSortColumn(columnId);
+      setSortField(field);
+    }
+  };
+
+  // Get sort direction for a column
+  const getSortDirection = (columnId: string): SortDirection => {
+    if (sortColumn !== columnId) return null;
+    const column = rentalsColumnConfig.columns.find((c) => c.id === columnId);
+    const field = column?.sortField || columnId;
+    return sortField === field ? 'asc' : sortField === `-${field}` ? 'desc' : null;
+  };
 
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="border-b-2 border-primary bg-background p-4 flex items-center gap-4">
-        <Input
-          placeholder="Leihvorgänge suchen..."
-          className="max-w-md"
-          disabled
-        />
-        <span className="text-sm text-muted-foreground ml-auto">
-          {rentals.length} Leihvorgänge
-        </span>
+      <div className="border-b-2 border-primary bg-background p-4">
+        <div className="flex gap-2">
+          <FilterPopover
+            open={filters.isFilterPopoverOpen}
+            onOpenChange={filters.setIsFilterPopoverOpen}
+            statusFilters={rentalsFilterConfig.statusFilters}
+            dateFilters={rentalsFilterConfig.dateFilters}
+            numericFilters={rentalsFilterConfig.numericFilters}
+            activeFilters={filters.activeFilters}
+            onAddFilter={filters.addFilter}
+            onRemoveFilter={filters.removeFilter}
+            onClearAll={filters.clearAllFilters}
+          >
+            <div className="flex-1">
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Leihvorgänge suchen..."
+                disabled={isLoading}
+                filters={filters.activeFilters}
+                onRemoveFilter={filters.removeFilter}
+                onFilterClick={filters.toggleFilterPopover}
+                filterCount={filters.filterCount}
+              />
+            </div>
+          </FilterPopover>
+          <ColumnSelector
+            columns={rentalsColumnConfig.columns}
+            visibleColumns={columnVisibility.visibleColumns}
+            onToggle={columnVisibility.toggleColumn}
+            onReset={columnVisibility.resetColumns}
+            hiddenCount={columnVisibility.hiddenCount}
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -69,70 +211,252 @@ export default function RentalsPage() {
           </div>
         ) : rentals.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Keine Leihvorgänge gefunden</p>
+            <p className="text-muted-foreground">
+              {debouncedSearch ? 'Keine Ergebnisse gefunden' : 'Keine Leihvorgänge gefunden'}
+            </p>
           </div>
         ) : (
-          <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-primary">
-                    <th className="px-4 py-2 text-left font-bold">Kunde</th>
-                    <th className="px-4 py-2 text-left font-bold">Gegenstände</th>
-                    <th className="px-4 py-2 text-left font-bold">Ausgeliehen</th>
-                    <th className="px-4 py-2 text-left font-bold">Erwartet</th>
-                    <th className="px-4 py-2 text-left font-bold">Zurück</th>
-                    <th className="px-4 py-2 text-left font-bold">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rentals.map((rental) => {
-                    const status = calculateRentalStatus(
-                      rental.rented_on,
-                      rental.returned_on,
-                      rental.expected_on,
-                      rental.extended_on
-                    );
-                    const statusColor = RENTAL_STATUS_COLORS[status];
+          <>
+            <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-primary">
+                      {columnVisibility.isColumnVisible('customer') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Kunde"
+                            sortDirection={getSortDirection('customer')}
+                            onSort={() => handleSort('customer')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('items') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Gegenstände"
+                            sortDirection={getSortDirection('items')}
+                            onSort={() => handleSort('items')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('rented_on') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Ausgeliehen"
+                            sortDirection={getSortDirection('rented_on')}
+                            onSort={() => handleSort('rented_on')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('expected_on') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Erwartet"
+                            sortDirection={getSortDirection('expected_on')}
+                            onSort={() => handleSort('expected_on')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('returned_on') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Zurück"
+                            sortDirection={getSortDirection('returned_on')}
+                            onSort={() => handleSort('returned_on')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('status') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Status"
+                            sortDirection={getSortDirection('status')}
+                            onSort={() => handleSort('status')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('extended_on') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Verlängert"
+                            sortDirection={getSortDirection('extended_on')}
+                            onSort={() => handleSort('extended_on')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('deposit') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Kaution"
+                            sortDirection={getSortDirection('deposit')}
+                            onSort={() => handleSort('deposit')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('deposit_back') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Kaution zurück"
+                            sortDirection={getSortDirection('deposit_back')}
+                            onSort={() => handleSort('deposit_back')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('remark') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Bemerkung"
+                            sortDirection={getSortDirection('remark')}
+                            onSort={() => handleSort('remark')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('employee') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Mitarbeiter (Aus)"
+                            sortDirection={getSortDirection('employee')}
+                            onSort={() => handleSort('employee')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('employee_back') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Mitarbeiter (Ein)"
+                            sortDirection={getSortDirection('employee_back')}
+                            onSort={() => handleSort('employee_back')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rentals.map((rental) => {
+                      const status = calculateRentalStatus(
+                        rental.rented_on,
+                        rental.returned_on,
+                        rental.expected_on,
+                        rental.extended_on
+                      );
+                      const statusColor = RENTAL_STATUS_COLORS[status];
 
-                    return (
-                      <tr
-                        key={rental.id}
-                        className="border-b hover:bg-muted/50 transition-colors"
-                        style={{ backgroundColor: statusColor }}
-                      >
-                        <td className="px-4 py-3">
-                          {rental.expand?.customer ? (
-                            <span className="font-medium">
-                              {rental.expand.customer.firstname}{' '}
-                              {rental.expand.customer.lastname}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
+                      return (
+                        <tr
+                          key={rental.id}
+                          className="border-b hover:bg-muted/50 transition-colors"
+                          style={{ backgroundColor: statusColor }}
+                        >
+                          {columnVisibility.isColumnVisible('customer') && (
+                            <td className="px-4 py-3">
+                              {rental.expand?.customer ? (
+                                <span className="font-medium">
+                                  {rental.expand.customer.firstname}{' '}
+                                  {rental.expand.customer.lastname}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </td>
                           )}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {rental.expand?.items?.length > 0
-                            ? rental.expand.items.map((item) => item.name).join(', ')
-                            : `${rental.items.length} Gegenstände`}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {formatDate(rental.rented_on)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {formatDate(rental.extended_on || rental.expected_on)}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {rental.returned_on ? formatDate(rental.returned_on) : '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant="outline">
-                            {getRentalStatusLabel(status)}
-                          </Badge>
-                        </td>
-                      </tr>
-                    );
-              })}
-            </tbody>
-          </table>
+                          {columnVisibility.isColumnVisible('items') && (
+                            <td className="px-4 py-3 text-sm">
+                              {rental.expand?.items?.length > 0
+                                ? rental.expand.items.map((item) => item.name).join(', ')
+                                : `${rental.items.length} Gegenstände`}
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('rented_on') && (
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              {formatDate(rental.rented_on)}
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('expected_on') && (
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              {formatDate(rental.extended_on || rental.expected_on)}
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('returned_on') && (
+                            <td className="px-4 py-3 text-sm">
+                              {rental.returned_on ? formatDate(rental.returned_on) : '—'}
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('status') && (
+                            <td className="px-4 py-3">
+                              <Badge variant="outline">
+                                {getRentalStatusLabel(status)}
+                              </Badge>
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('extended_on') && (
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              {rental.extended_on ? formatDate(rental.extended_on) : '—'}
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('deposit') && (
+                            <td className="px-4 py-3 text-sm">
+                              {rental.deposit > 0 ? `${rental.deposit} €` : '—'}
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('deposit_back') && (
+                            <td className="px-4 py-3 text-sm">
+                              {rental.deposit_back > 0 ? `${rental.deposit_back} €` : '—'}
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('remark') && (
+                            <td className="px-4 py-3 text-sm">
+                              {rental.remark || '—'}
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('employee') && (
+                            <td className="px-4 py-3 text-sm">
+                              {rental.employee || '—'}
+                            </td>
+                          )}
+                          {columnVisibility.isColumnVisible('employee_back') && (
+                            <td className="px-4 py-3 text-sm">
+                              {rental.employee_back || '—'}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                })}
+              </tbody>
+            </table>
+
+            {/* Infinite scroll trigger */}
+            <div ref={observerTarget} className="h-4" />
+
+            {/* Loading more indicator */}
+            {isLoadingMore && (
+              <div className="flex items-center justify-center py-4">
+                <div className="h-6 w-6 animate-spin border-4 border-primary border-t-transparent" />
+                <span className="ml-2 text-sm text-muted-foreground">
+                  Lädt mehr...
+                </span>
+              </div>
+            )}
+
+            {/* End of results */}
+            {!hasMore && rentals.length > 0 && (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">
+                  Alle Leihvorgänge geladen
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

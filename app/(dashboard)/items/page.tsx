@@ -4,10 +4,17 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { SearchBar } from '@/components/search/search-bar';
+import { FilterPopover } from '@/components/search/filter-popover';
+import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
+import { ColumnSelector } from '@/components/table/column-selector';
 import { Badge } from '@/components/ui/badge';
 import { collections } from '@/lib/pocketbase/client';
+import { useFilters } from '@/hooks/use-filters';
+import { useColumnVisibility } from '@/hooks/use-column-visibility';
+import { itemsFilterConfig } from '@/lib/filters/filter-configs';
+import { itemsColumnConfig } from '@/lib/tables/column-configs';
 import type { Item } from '@/types';
 import { getItemStatusLabel, ITEM_STATUS_COLORS } from '@/lib/constants/statuses';
 import { getCategoryLabel } from '@/lib/constants/categories';
@@ -15,42 +22,178 @@ import { getCategoryLabel } from '@/lib/constants/categories';
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const perPage = 50;
+
+  // Filter management
+  const filters = useFilters({
+    entity: 'items',
+    config: itemsFilterConfig,
+  });
+
+  // Sort management
+  const [sortField, setSortField] = useState<string>(itemsColumnConfig.defaultSort);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+
+  // Column visibility management
+  const columnVisibility = useColumnVisibility({
+    entity: 'items',
+    config: itemsColumnConfig,
+  });
+
+  // Debounce search input
   useEffect(() => {
-    async function fetchItems() {
-      try {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset pagination when search, filters, or sort change
+  useEffect(() => {
+    setItems([]);
+    setCurrentPage(1);
+    setHasMore(true);
+  }, [debouncedSearch, filters.activeFilters, sortField]);
+
+  const fetchItems = useCallback(async (page: number) => {
+    try {
+      const isInitialLoad = page === 1;
+      if (isInitialLoad) {
         setIsLoading(true);
-        const result = await collections.items().getList<Item>(1, 50, {
-          sort: '-created',
-        });
-        setItems(result.items);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching items:', err);
-        setError(
-          err instanceof Error ? err.message : 'Fehler beim Laden der Gegenstände'
-        );
-      } finally {
-        setIsLoading(false);
+      } else {
+        setIsLoadingMore(true);
       }
+
+      // Build server-side filter from search and active filters
+      const filter = filters.buildFilter(debouncedSearch);
+
+      const result = await collections.items().getList<Item>(
+        page,
+        perPage,
+        {
+          sort: sortField,
+          filter,
+          skipTotal: true,
+        }
+      );
+
+      if (isInitialLoad) {
+        setItems(result.items);
+      } else {
+        setItems((prev) => [...prev, ...result.items]);
+      }
+
+      setHasMore(result.items.length === perPage);
+      setCurrentPage(page + 1);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching items:', err);
+      setError(
+        err instanceof Error ? err.message : 'Fehler beim Laden der Gegenstände'
+      );
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [debouncedSearch, filters.buildFilter, sortField, perPage]);
+
+  // Initial load and reload on search change
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchItems(1);
+  }, [debouncedSearch, fetchItems]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
+          fetchItems(currentPage);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
     }
 
-    fetchItems();
-  }, []);
+    return () => observer.disconnect();
+  }, [fetchItems, currentPage, hasMore, isLoading, isLoadingMore]);
+
+  // Handle column sort
+  const handleSort = (columnId: string) => {
+    const column = itemsColumnConfig.columns.find((c) => c.id === columnId);
+    if (!column || !column.sortable) return;
+
+    const field = column.sortField || columnId;
+
+    // Toggle sort direction
+    if (sortColumn === columnId) {
+      // Currently sorting by this column, toggle direction
+      setSortField(sortField.startsWith('-') ? field : `-${field}`);
+    } else {
+      // New column, start with ascending
+      setSortColumn(columnId);
+      setSortField(field);
+    }
+  };
+
+  // Get sort direction for a column
+  const getSortDirection = (columnId: string): SortDirection => {
+    if (sortColumn !== columnId) return null;
+    const column = itemsColumnConfig.columns.find((c) => c.id === columnId);
+    const field = column?.sortField || columnId;
+    return sortField === field ? 'asc' : sortField === `-${field}` ? 'desc' : null;
+  };
 
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="border-b-2 border-primary bg-background p-4 flex items-center gap-4">
-        <Input
-          placeholder="Gegenstände suchen..."
-          className="max-w-md"
-          disabled
-        />
-        <span className="text-sm text-muted-foreground ml-auto">
-          {items.length} Gegenstände
-        </span>
+      <div className="border-b-2 border-primary bg-background p-4">
+        <div className="flex gap-2">
+          <FilterPopover
+            open={filters.isFilterPopoverOpen}
+            onOpenChange={filters.setIsFilterPopoverOpen}
+            statusFilters={itemsFilterConfig.statusFilters}
+            dateFilters={itemsFilterConfig.dateFilters}
+            categoryFilters={itemsFilterConfig.categoryFilters}
+            numericFilters={itemsFilterConfig.numericFilters}
+            activeFilters={filters.activeFilters}
+            onAddFilter={filters.addFilter}
+            onRemoveFilter={filters.removeFilter}
+            onClearAll={filters.clearAllFilters}
+          >
+            <div className="flex-1">
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Gegenstände suchen..."
+                disabled={isLoading}
+                filters={filters.activeFilters}
+                onRemoveFilter={filters.removeFilter}
+                onFilterClick={filters.toggleFilterPopover}
+                filterCount={filters.filterCount}
+              />
+            </div>
+          </FilterPopover>
+          <ColumnSelector
+            columns={itemsColumnConfig.columns}
+            visibleColumns={columnVisibility.visibleColumns}
+            onToggle={columnVisibility.toggleColumn}
+            onReset={columnVisibility.resetColumns}
+            hiddenCount={columnVisibility.hiddenCount}
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -68,50 +211,262 @@ export default function ItemsPage() {
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Keine Gegenstände gefunden</p>
+            <p className="text-muted-foreground">
+              {debouncedSearch ? 'Keine Ergebnisse gefunden' : 'Keine Gegenstände gefunden'}
+            </p>
           </div>
         ) : (
-          <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-primary">
-                    <th className="px-4 py-2 text-left font-bold">ID</th>
-                    <th className="px-4 py-2 text-left font-bold">Name</th>
-                    <th className="px-4 py-2 text-left font-bold">Marke</th>
-                    <th className="px-4 py-2 text-left font-bold">Kategorie</th>
-                    <th className="px-4 py-2 text-left font-bold">Status</th>
-                    <th className="px-4 py-2 text-left font-bold">Kaution</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-b hover:bg-muted/50 transition-colors"
-                    >
-                      <td className="px-4 py-3 font-mono text-sm">
-                        {item.iid}
-                      </td>
-                      <td className="px-4 py-3 font-medium">{item.name}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {item.brand || '—'}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.category.length > 0
-                          ? item.category.map(getCategoryLabel).join(', ')
-                          : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={ITEM_STATUS_COLORS[item.status]}>
-                          {getItemStatusLabel(item.status)}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {item.deposit > 0 ? `${item.deposit} €` : '—'}
-                      </td>
+          <>
+            <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-primary">
+                      {columnVisibility.isColumnVisible('iid') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="ID"
+                            sortDirection={getSortDirection('iid')}
+                            onSort={() => handleSort('iid')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('name') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Name"
+                            sortDirection={getSortDirection('name')}
+                            onSort={() => handleSort('name')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('brand') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Marke"
+                            sortDirection={getSortDirection('brand')}
+                            onSort={() => handleSort('brand')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('model') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Modell"
+                            sortDirection={getSortDirection('model')}
+                            onSort={() => handleSort('model')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('category') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Kategorie"
+                            sortDirection={getSortDirection('category')}
+                            onSort={() => handleSort('category')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('status') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Status"
+                            sortDirection={getSortDirection('status')}
+                            onSort={() => handleSort('status')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('deposit') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Kaution"
+                            sortDirection={getSortDirection('deposit')}
+                            onSort={() => handleSort('deposit')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('description') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Beschreibung"
+                            sortDirection={getSortDirection('description')}
+                            onSort={() => handleSort('description')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('packaging') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Verpackung"
+                            sortDirection={getSortDirection('packaging')}
+                            onSort={() => handleSort('packaging')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('manual') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Anleitung"
+                            sortDirection={getSortDirection('manual')}
+                            onSort={() => handleSort('manual')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('parts') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Teile"
+                            sortDirection={getSortDirection('parts')}
+                            onSort={() => handleSort('parts')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('copies') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Exemplare"
+                            sortDirection={getSortDirection('copies')}
+                            onSort={() => handleSort('copies')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('internal_note') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Interne Notiz"
+                            sortDirection={getSortDirection('internal_note')}
+                            onSort={() => handleSort('internal_note')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('added_on') && (
+                        <th className="px-4 py-2 text-left">
+                          <SortableHeader
+                            label="Hinzugefügt"
+                            sortDirection={getSortDirection('added_on')}
+                            onSort={() => handleSort('added_on')}
+                            disabled={isLoading}
+                          />
+                        </th>
+                      )}
                     </tr>
-                  ))}
-            </tbody>
-          </table>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="border-b hover:bg-muted/50 transition-colors"
+                      >
+                        {columnVisibility.isColumnVisible('iid') && (
+                          <td className="px-4 py-3 font-mono text-sm">
+                            {String(item.iid).padStart(4, '0')}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('name') && (
+                          <td className="px-4 py-3 font-medium">{item.name}</td>
+                        )}
+                        {columnVisibility.isColumnVisible('brand') && (
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {item.brand || '—'}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('model') && (
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {item.model || '—'}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('category') && (
+                          <td className="px-4 py-3 text-sm">
+                            {item.category.length > 0
+                              ? item.category.map(getCategoryLabel).join(', ')
+                              : '—'}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('status') && (
+                          <td className="px-4 py-3">
+                            <Badge variant={ITEM_STATUS_COLORS[item.status]}>
+                              {getItemStatusLabel(item.status)}
+                            </Badge>
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('deposit') && (
+                          <td className="px-4 py-3 text-sm">
+                            {item.deposit > 0 ? `${item.deposit} €` : '—'}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('description') && (
+                          <td className="px-4 py-3 text-sm">
+                            {item.description || '—'}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('packaging') && (
+                          <td className="px-4 py-3 text-sm">
+                            {item.packaging || '—'}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('manual') && (
+                          <td className="px-4 py-3 text-sm">
+                            {item.manual || '—'}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('parts') && (
+                          <td className="px-4 py-3 text-sm">
+                            {item.parts || '—'}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('copies') && (
+                          <td className="px-4 py-3 text-sm">
+                            {item.copies}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('internal_note') && (
+                          <td className="px-4 py-3 text-sm">
+                            {item.internal_note || '—'}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('added_on') && (
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {new Date(item.added_on).toLocaleDateString('de-DE')}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
+
+            {/* Infinite scroll trigger */}
+            <div ref={observerTarget} className="h-4" />
+
+            {/* Loading more indicator */}
+            {isLoadingMore && (
+              <div className="flex items-center justify-center py-4">
+                <div className="h-6 w-6 animate-spin border-4 border-primary border-t-transparent" />
+                <span className="ml-2 text-sm text-muted-foreground">
+                  Lädt mehr...
+                </span>
+              </div>
+            )}
+
+            {/* End of results */}
+            {!hasMore && items.length > 0 && (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">
+                  Alle Gegenstände geladen
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -1,0 +1,396 @@
+/**
+ * Filter popover with tabs for different filter types
+ */
+
+'use client';
+
+import { useState } from 'react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import type { FilterConfig } from '@/lib/filters/filter-configs';
+import type { ActiveFilter } from '@/lib/filters/filter-utils';
+import { Calendar } from 'lucide-react';
+
+export interface FilterPopoverProps {
+  /** The trigger element (usually a button) */
+  children: React.ReactNode;
+
+  /** Is popover open */
+  open?: boolean;
+
+  /** Callback when open state changes */
+  onOpenChange?: (open: boolean) => void;
+
+  /** Status filter configs */
+  statusFilters?: FilterConfig[];
+
+  /** Date filter configs */
+  dateFilters?: FilterConfig[];
+
+  /** Category filter configs */
+  categoryFilters?: FilterConfig[];
+
+  /** Numeric filter configs */
+  numericFilters?: FilterConfig[];
+
+  /** Current active filters */
+  activeFilters: ActiveFilter[];
+
+  /** Callback when filter is added */
+  onAddFilter: (filter: Omit<ActiveFilter, 'id'>) => void;
+
+  /** Callback when filter is removed */
+  onRemoveFilter: (filterId: string) => void;
+
+  /** Callback when all filters are cleared */
+  onClearAll: () => void;
+}
+
+export function FilterPopover({
+  children,
+  open,
+  onOpenChange,
+  statusFilters = [],
+  dateFilters = [],
+  categoryFilters = [],
+  numericFilters = [],
+  activeFilters,
+  onAddFilter,
+  onRemoveFilter,
+  onClearAll,
+}: FilterPopoverProps) {
+  const [dateRanges, setDateRanges] = useState<
+    Record<string, { start: string; end: string }>
+  >({});
+  const [numericRanges, setNumericRanges] = useState<
+    Record<string, { min: string; max: string }>
+  >({});
+
+  // Count filters by type
+  const statusCount = activeFilters.filter((f) => f.type === 'status').length;
+  const dateCount = activeFilters.filter((f) => f.type === 'date').length;
+  const categoryCount = activeFilters.filter((f) => f.type === 'category').length;
+  const numericCount = activeFilters.filter((f) => f.type === 'numeric').length;
+
+  // Determine which tabs to show
+  const hasStatus = statusFilters.length > 0;
+  const hasDate = dateFilters.length > 0;
+  const hasCategory = categoryFilters.length > 0;
+  const hasNumeric = numericFilters.length > 0;
+
+  const defaultTab = hasStatus
+    ? 'status'
+    : hasDate
+    ? 'date'
+    : hasCategory
+    ? 'category'
+    : 'numeric';
+
+  // Check if a filter is active
+  const isFilterActive = (field: string, value: string) => {
+    return activeFilters.some(
+      (f) => f.field === field && String(f.value) === value
+    );
+  };
+
+  // Handle status/category filter toggle
+  const handleToggleFilter = (
+    config: FilterConfig,
+    optionValue: string,
+    optionLabel: string
+  ) => {
+    const isActive = isFilterActive(config.field, optionValue);
+
+    if (!isActive) {
+      onAddFilter({
+        type: config.type as 'status' | 'category',
+        field: config.field,
+        operator: '=',
+        value: optionValue,
+        label: `${config.label}: ${optionLabel}`,
+      });
+    } else {
+      // Remove the filter when unchecking
+      const filterToRemove = activeFilters.find(
+        (f) => f.field === config.field && String(f.value) === optionValue
+      );
+      if (filterToRemove) {
+        onRemoveFilter(filterToRemove.id);
+      }
+    }
+  };
+
+  // Handle date range filter
+  const handleApplyDateRange = (config: FilterConfig) => {
+    const range = dateRanges[config.id];
+    if (range?.start && range?.end) {
+      onAddFilter({
+        type: 'date',
+        field: config.field,
+        operator: '>=',
+        value: [range.start, range.end],
+        label: `${config.label}: ${new Date(range.start).toLocaleDateString('de-DE')} - ${new Date(range.end).toLocaleDateString('de-DE')}`,
+      });
+      // Clear the range
+      setDateRanges((prev) => ({ ...prev, [config.id]: { start: '', end: '' } }));
+    }
+  };
+
+  // Handle numeric range filter
+  const handleApplyNumericRange = (config: FilterConfig) => {
+    const range = numericRanges[config.id];
+    if (range?.min || range?.max) {
+      const min = range.min ? Number(range.min) : config.min || 0;
+      const max = range.max ? Number(range.max) : config.max || 999999;
+
+      onAddFilter({
+        type: 'numeric',
+        field: config.field,
+        operator: '>=',
+        value: [min, max],
+        label: `${config.label}: ${min} - ${max}`,
+      });
+      // Clear the range
+      setNumericRanges((prev) => ({ ...prev, [config.id]: { min: '', max: '' } }));
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent className="w-80" align="start">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-sm">Filter</h4>
+            {activeFilters.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={onClearAll}>
+                Alle löschen
+              </Button>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Filter tabs */}
+          <Tabs defaultValue={defaultTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              {hasStatus && (
+                <TabsTrigger value="status" className="text-xs relative">
+                  Status
+                  {statusCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center">
+                      {statusCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+              )}
+              {hasDate && (
+                <TabsTrigger value="date" className="text-xs relative">
+                  Datum
+                  {dateCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center">
+                      {dateCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+              )}
+              {hasCategory && (
+                <TabsTrigger value="category" className="text-xs relative">
+                  Kategorie
+                  {categoryCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center">
+                      {categoryCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+              )}
+              {hasNumeric && (
+                <TabsTrigger value="numeric" className="text-xs relative">
+                  Wert
+                  {numericCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center">
+                      {numericCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+            {/* Status filters */}
+            {hasStatus && (
+              <TabsContent value="status" className="space-y-3 max-h-64 overflow-y-auto">
+                {statusFilters.map((config) => (
+                  <div key={config.id} className="space-y-2">
+                    <Label className="text-xs font-medium">{config.label}</Label>
+                    <div className="space-y-2">
+                      {config.options?.map((option) => {
+                        const isActive = isFilterActive(config.field, option.value);
+                        return (
+                          <div key={option.value} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`${config.id}-${option.value}`}
+                              checked={isActive}
+                              onCheckedChange={() =>
+                                handleToggleFilter(config, option.value, option.label)
+                              }
+                            />
+                            <label
+                              htmlFor={`${config.id}-${option.value}`}
+                              className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {option.label}
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </TabsContent>
+            )}
+
+            {/* Date filters */}
+            {hasDate && (
+              <TabsContent value="date" className="space-y-4 max-h-64 overflow-y-auto">
+                {dateFilters.map((config) => (
+                  <div key={config.id} className="space-y-2">
+                    <Label className="text-xs font-medium">{config.label}</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="date"
+                        placeholder="Von"
+                        value={dateRanges[config.id]?.start || ''}
+                        onChange={(e) =>
+                          setDateRanges((prev) => ({
+                            ...prev,
+                            [config.id]: { ...prev[config.id], start: e.target.value },
+                          }))
+                        }
+                        className="text-xs"
+                      />
+                      <Input
+                        type="date"
+                        placeholder="Bis"
+                        value={dateRanges[config.id]?.end || ''}
+                        onChange={(e) =>
+                          setDateRanges((prev) => ({
+                            ...prev,
+                            [config.id]: { ...prev[config.id], end: e.target.value },
+                          }))
+                        }
+                        className="text-xs"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs"
+                      onClick={() => handleApplyDateRange(config)}
+                      disabled={!dateRanges[config.id]?.start || !dateRanges[config.id]?.end}
+                    >
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Anwenden
+                    </Button>
+                  </div>
+                ))}
+              </TabsContent>
+            )}
+
+            {/* Category filters */}
+            {hasCategory && (
+              <TabsContent value="category" className="space-y-3 max-h-64 overflow-y-auto">
+                {categoryFilters.map((config) => (
+                  <div key={config.id} className="space-y-2">
+                    <Label className="text-xs font-medium">{config.label}</Label>
+                    <div className="space-y-2">
+                      {config.options?.map((option) => {
+                        const isActive = isFilterActive(config.field, option.value);
+                        return (
+                          <div key={option.value} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`${config.id}-${option.value}`}
+                              checked={isActive}
+                              onCheckedChange={() =>
+                                handleToggleFilter(config, option.value, option.label)
+                              }
+                            />
+                            <label
+                              htmlFor={`${config.id}-${option.value}`}
+                              className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {option.label}
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </TabsContent>
+            )}
+
+            {/* Numeric filters */}
+            {hasNumeric && (
+              <TabsContent value="numeric" className="space-y-4 max-h-64 overflow-y-auto">
+                {numericFilters.map((config) => (
+                  <div key={config.id} className="space-y-2">
+                    <Label className="text-xs font-medium">{config.label}</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="number"
+                        placeholder={`Min (${config.min || 0})`}
+                        value={numericRanges[config.id]?.min || ''}
+                        onChange={(e) =>
+                          setNumericRanges((prev) => ({
+                            ...prev,
+                            [config.id]: { ...prev[config.id], min: e.target.value },
+                          }))
+                        }
+                        min={config.min}
+                        max={config.max}
+                        className="text-xs"
+                      />
+                      <Input
+                        type="number"
+                        placeholder={`Max (${config.max || '∞'})`}
+                        value={numericRanges[config.id]?.max || ''}
+                        onChange={(e) =>
+                          setNumericRanges((prev) => ({
+                            ...prev,
+                            [config.id]: { ...prev[config.id], max: e.target.value },
+                          }))
+                        }
+                        min={config.min}
+                        max={config.max}
+                        className="text-xs"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs"
+                      onClick={() => handleApplyNumericRange(config)}
+                      disabled={!numericRanges[config.id]?.min && !numericRanges[config.id]?.max}
+                    >
+                      Anwenden
+                    </Button>
+                  </div>
+                ))}
+              </TabsContent>
+            )}
+          </Tabs>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
