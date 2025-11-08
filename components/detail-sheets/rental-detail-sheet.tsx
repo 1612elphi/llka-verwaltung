@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { SaveIcon, XIcon, CheckIcon, ChevronsUpDownIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { SaveIcon, XIcon, CheckIcon, ChevronsUpDownIcon, PlusIcon, Trash2Icon, CalendarIcon } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -44,6 +44,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
 import { collections } from '@/lib/pocketbase/client';
 import { formatDate, formatCurrency, calculateRentalStatus } from '@/lib/utils/formatting';
 import { cn } from '@/lib/utils';
@@ -66,6 +67,32 @@ const rentalSchema = z.object({
 
 type RentalFormValues = z.infer<typeof rentalSchema>;
 
+// Date helper functions
+function formatDateDisplay(date: Date | undefined): string {
+  if (!date) return '';
+  return date.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function isValidDate(date: Date | undefined): boolean {
+  if (!date) return false;
+  return !isNaN(date.getTime());
+}
+
+function dateToString(date: Date | undefined): string {
+  if (!date || !isValidDate(date)) return '';
+  return date.toISOString().split('T')[0];
+}
+
+function stringToDate(dateString: string | undefined): Date | undefined {
+  if (!dateString) return undefined;
+  const date = new Date(dateString + 'T00:00:00');
+  return isValidDate(date) ? date : undefined;
+}
+
 interface RentalDetailSheetProps {
   rental: RentalExpanded | null;
   open: boolean;
@@ -86,6 +113,10 @@ export function RentalDetailSheet({
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [itemSearchOpen, setItemSearchOpen] = useState(false);
+  const [rentedOnPickerOpen, setRentedOnPickerOpen] = useState(false);
+  const [expectedOnPickerOpen, setExpectedOnPickerOpen] = useState(false);
+  const [extendedOnPickerOpen, setExtendedOnPickerOpen] = useState(false);
+  const [returnedOnPickerOpen, setReturnedOnPickerOpen] = useState(false);
 
   const isNewRental = !rental?.id;
 
@@ -113,6 +144,29 @@ export function RentalDetailSheet({
   const expectedOn = watch('expected_on');
   const extendedOn = watch('extended_on');
   const returnedOn = watch('returned_on');
+
+  // Display values for date inputs
+  const [rentedOnDisplay, setRentedOnDisplay] = useState(formatDateDisplay(stringToDate(rentedOn)));
+  const [expectedOnDisplay, setExpectedOnDisplay] = useState(formatDateDisplay(stringToDate(expectedOn)));
+  const [extendedOnDisplay, setExtendedOnDisplay] = useState(formatDateDisplay(stringToDate(extendedOn)));
+  const [returnedOnDisplay, setReturnedOnDisplay] = useState(formatDateDisplay(stringToDate(returnedOn)));
+
+  // Update display values when form values change
+  useEffect(() => {
+    setRentedOnDisplay(formatDateDisplay(stringToDate(rentedOn)));
+  }, [rentedOn]);
+
+  useEffect(() => {
+    setExpectedOnDisplay(formatDateDisplay(stringToDate(expectedOn)));
+  }, [expectedOn]);
+
+  useEffect(() => {
+    setExtendedOnDisplay(formatDateDisplay(stringToDate(extendedOn)));
+  }, [extendedOn]);
+
+  useEffect(() => {
+    setReturnedOnDisplay(formatDateDisplay(stringToDate(returnedOn)));
+  }, [returnedOn]);
 
   // Load customers and items for dropdowns
   useEffect(() => {
@@ -510,16 +564,60 @@ export function RentalDetailSheet({
                 <h3 className="font-semibold text-lg">Zeitraum</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
+                {/* Rented On */}
                 <div>
                   <Label htmlFor="rented_on">Ausgeliehen am *</Label>
                   <div className="flex gap-2 mt-1">
-                    <Input
-                      id="rented_on"
-                      type="date"
-                      value={rentedOn}
-                      onChange={(e) => setValue('rented_on', e.target.value, { shouldDirty: true })}
-                      className="flex-1"
-                    />
+                    <div className="relative flex-1">
+                      <Input
+                        id="rented_on"
+                        value={rentedOnDisplay}
+                        placeholder="Tag auswählen..."
+                        className="bg-background pr-10"
+                        onChange={(e) => {
+                          const date = new Date(e.target.value);
+                          setRentedOnDisplay(e.target.value);
+                          if (isValidDate(date)) {
+                            setValue('rented_on', dateToString(date), { shouldDirty: true });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setRentedOnPickerOpen(true);
+                          }
+                        }}
+                      />
+                      <Popover open={rentedOnPickerOpen} onOpenChange={setRentedOnPickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
+                          >
+                            <CalendarIcon className="size-3.5" />
+                            <span className="sr-only">Datum auswählen</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-auto overflow-hidden p-0"
+                          align="end"
+                          alignOffset={-8}
+                          sideOffset={10}
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={stringToDate(rentedOn)}
+                            captionLayout="dropdown"
+                            onSelect={(date) => {
+                              setValue('rented_on', dateToString(date), { shouldDirty: true });
+                              setRentedOnDisplay(formatDateDisplay(date));
+                              setRentedOnPickerOpen(false);
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
@@ -538,16 +636,60 @@ export function RentalDetailSheet({
                   )}
                 </div>
 
+                {/* Expected On */}
                 <div>
                   <Label htmlFor="expected_on">Erwartet am *</Label>
                   <div className="flex gap-2 mt-1">
-                    <Input
-                      id="expected_on"
-                      type="date"
-                      value={expectedOn}
-                      onChange={(e) => setValue('expected_on', e.target.value, { shouldDirty: true })}
-                      className="flex-1"
-                    />
+                    <div className="relative flex-1">
+                      <Input
+                        id="expected_on"
+                        value={expectedOnDisplay}
+                        placeholder="Tag auswählen..."
+                        className="bg-background pr-10"
+                        onChange={(e) => {
+                          const date = new Date(e.target.value);
+                          setExpectedOnDisplay(e.target.value);
+                          if (isValidDate(date)) {
+                            setValue('expected_on', dateToString(date), { shouldDirty: true });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setExpectedOnPickerOpen(true);
+                          }
+                        }}
+                      />
+                      <Popover open={expectedOnPickerOpen} onOpenChange={setExpectedOnPickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
+                          >
+                            <CalendarIcon className="size-3.5" />
+                            <span className="sr-only">Datum auswählen</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-auto overflow-hidden p-0"
+                          align="end"
+                          alignOffset={-8}
+                          sideOffset={10}
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={stringToDate(expectedOn)}
+                            captionLayout="dropdown"
+                            onSelect={(date) => {
+                              setValue('expected_on', dateToString(date), { shouldDirty: true });
+                              setExpectedOnDisplay(formatDateDisplay(date));
+                              setExpectedOnPickerOpen(false);
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <div className="flex gap-1 shrink-0">
                       <Button
                         type="button"
@@ -585,27 +727,115 @@ export function RentalDetailSheet({
                   )}
                 </div>
 
+                {/* Extended On */}
                 <div>
                   <Label htmlFor="extended_on">Verlängert bis</Label>
-                  <Input
-                    id="extended_on"
-                    type="date"
-                    value={extendedOn}
-                    onChange={(e) => setValue('extended_on', e.target.value, { shouldDirty: true })}
-                    className="mt-1"
-                  />
+                  <div className="relative mt-1">
+                    <Input
+                      id="extended_on"
+                      value={extendedOnDisplay}
+                      placeholder="Tag auswählen..."
+                      className="bg-background pr-10"
+                      onChange={(e) => {
+                        const date = new Date(e.target.value);
+                        setExtendedOnDisplay(e.target.value);
+                        if (isValidDate(date)) {
+                          setValue('extended_on', dateToString(date), { shouldDirty: true });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setExtendedOnPickerOpen(true);
+                        }
+                      }}
+                    />
+                    <Popover open={extendedOnPickerOpen} onOpenChange={setExtendedOnPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
+                        >
+                          <CalendarIcon className="size-3.5" />
+                          <span className="sr-only">Datum auswählen</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto overflow-hidden p-0"
+                        align="end"
+                        alignOffset={-8}
+                        sideOffset={10}
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={stringToDate(extendedOn)}
+                          captionLayout="dropdown"
+                          onSelect={(date) => {
+                            setValue('extended_on', dateToString(date), { shouldDirty: true });
+                            setExtendedOnDisplay(formatDateDisplay(date));
+                            setExtendedOnPickerOpen(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
 
+                {/* Returned On */}
                 <div>
                   <Label htmlFor="returned_on">Zurückgegeben am</Label>
                   <div className="flex gap-2 mt-1">
-                    <Input
-                      id="returned_on"
-                      type="date"
-                      value={returnedOn}
-                      onChange={(e) => setValue('returned_on', e.target.value, { shouldDirty: true })}
-                      className="flex-1"
-                    />
+                    <div className="relative flex-1">
+                      <Input
+                        id="returned_on"
+                        value={returnedOnDisplay}
+                        placeholder="Tag auswählen..."
+                        className="bg-background pr-10"
+                        onChange={(e) => {
+                          const date = new Date(e.target.value);
+                          setReturnedOnDisplay(e.target.value);
+                          if (isValidDate(date)) {
+                            setValue('returned_on', dateToString(date), { shouldDirty: true });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setReturnedOnPickerOpen(true);
+                          }
+                        }}
+                      />
+                      <Popover open={returnedOnPickerOpen} onOpenChange={setReturnedOnPickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
+                          >
+                            <CalendarIcon className="size-3.5" />
+                            <span className="sr-only">Datum auswählen</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-auto overflow-hidden p-0"
+                          align="end"
+                          alignOffset={-8}
+                          sideOffset={10}
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={stringToDate(returnedOn)}
+                            captionLayout="dropdown"
+                            onSelect={(date) => {
+                              setValue('returned_on', dateToString(date), { shouldDirty: true });
+                              setReturnedOnDisplay(formatDateDisplay(date));
+                              setReturnedOnPickerOpen(false);
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
