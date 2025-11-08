@@ -1,7 +1,7 @@
 /**
- * Cord label design
- * 100mm x 50mm label optimized for wrapping around cables/cords
- * Vertical sections layout
+ * Cable wrap label design - Flag style
+ * 100mm x 50mm label designed to wrap around cables
+ * Left and right sides form visible "flags" when wrapped
  */
 
 'use client';
@@ -14,7 +14,12 @@ interface CordLabelProps {
 }
 
 export function CordLabel({ item }: CordLabelProps) {
+  // Format the item ID with leading zeros (e.g., "9901")
   const paddedId = String(item.iid).padStart(4, '0');
+
+  // Split ID into two parts for display (e.g., "99" and "01")
+  const idFirstPart = paddedId.slice(0, 2);
+  const idSecondPart = paddedId.slice(2);
 
   return (
     <div
@@ -27,6 +32,7 @@ export function CordLabel({ item }: CordLabelProps) {
         overflow: 'hidden',
       }}
     >
+      {/* Main content container */}
       <div style={{
         width: '100%',
         height: '100%',
@@ -35,92 +41,180 @@ export function CordLabel({ item }: CordLabelProps) {
         fontFamily: "'Univers LT Std', sans-serif",
         color: 'black',
       }}>
-        {/* Left Section - ID and QR Code */}
+        
+        {/* LEFT FLAG SIDE */}
         <div style={{
-          width: '30mm',
-          height: '100%',
-          borderRight: '2px solid black',
+          position: 'absolute',
+          left: '0',
+          top: '0',
+          width: '45mm',
+          height: '50mm',
+          border: '2mm solid black',
+          backgroundColor: 'white',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2mm',
-          gap: '2mm',
         }}>
+          {/* QR Code */}
           <div style={{
-            fontFamily: "'Univers LT Std', sans-serif",
-            fontSize: '32pt',
-            fontWeight: 900,
-            lineHeight: '1',
-          }}>
-            {paddedId}
-          </div>
-          <div style={{
-            width: '22mm',
-            height: '22mm',
+            position: 'absolute',
+            left: '2mm',
+            top: '2mm',
+            width: '37mm',
+            height: '37mm',
           }}>
             <QRCodeSVG
               value={paddedId}
-              size={83}
+              size={100}
               level="M"
               includeMargin={false}
+              fgColor="black"
+              bgColor="white"
               style={{
                 width: '100%',
                 height: '100%',
               }}
             />
           </div>
-        </div>
-
-        {/* Middle Section - Item Name */}
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '4mm',
-          borderRight: '2px solid black',
-        }}>
+          
+          {/* ID */}
           <div style={{
-            fontFamily: "'Univers LT Std', sans-serif",
-            fontSize: '16pt',
-            fontWeight: 700,
-            lineHeight: '1.2',
+            position: 'absolute',
+            bottom: '2mm',
+            width: '41mm',
+            height: '5mm',
+            display: 'flex',
+            alignItems: 'center',
             textAlign: 'center',
+            justifyContent: 'center',
+            fontSize: '7pt',
+            fontFamily: 'Univers LT Std Condensed, sans-serif',
+            fontWeight: 400,
+            lineHeight: '1',
+            paddingTop: '3mm',
           }}>
-            {item.name}
+            leih.lokal Karlsruhe <br />Gerwigstr. 41
           </div>
+
         </div>
 
-        {/* Right Section - Address */}
+        {/* CENTER SPINE - Cable wrap area */}
         <div style={{
-          width: '25mm',
-          height: '100%',
+          position: 'absolute',
+          left: '45mm',
+          top: '0',
+          width: '10mm',
+          height: '50mm',
+          backgroundColor: 'black',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '2mm',
-          backgroundColor: 'black',
           color: 'white',
         }}>
+          
+
+        </div>
+
           <div style={{
-            fontFamily: "'Univers LT Std Condensed', sans-serif",
-            fontSize: '9pt',
-            fontWeight: 700,
-            lineHeight: '1.3',
-            textAlign: 'center',
+            position: 'absolute',
+            left: '49mm',
+            top: '0',
+            width: '2mm',
+            height: '50mm',
+            backgroundColor: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+          }} />
+          
+          
+        {/* RIGHT FLAG SIDE */}
+        <div style={{
+          position: 'absolute',
+          right: '0',
+          top: '0',
+          width: '45mm',
+          height: '50mm',
+          border: '2mm solid black',
+          backgroundColor: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          {/* ID First Part */}
+          <div style={{
+            position: 'absolute',
+            left: '0mm',
+            top: '0mm',
+            right: '0mm',
+            height: '16mm',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'black',
+            color: 'white',
+            border: '2px solid black',
           }}>
-            <div>Leih.Lokal</div>
-            <div style={{ fontSize: '7pt', fontWeight: 400, marginTop: '1mm' }}>
-              Gerwigstr. 41
-            </div>
-            <div style={{ fontSize: '7pt', fontWeight: 400 }}>
-              76131
-            </div>
-            <div style={{ fontSize: '7pt', fontWeight: 400 }}>
-              Karlsruhe
-            </div>
+            <span style={{
+              fontFamily: "'Univers LT Std', sans-serif",
+              fontSize: '50pt',
+              fontWeight: 900,
+              lineHeight: '1',
+              paddingTop: '3mm',
+            }}>
+              {idFirstPart}
+            </span>
+          </div>
+          {/* ID Second Part */}
+          <div style={{
+            position: 'absolute',
+            left: '0mm',
+            top: '17mm',
+            right: '0mm',
+            height: '16mm',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'white',
+            color: 'black',
+            borderBottom: '2px solid black',
+          }}>
+            <span style={{
+              fontFamily: "'Univers LT Std', sans-serif",
+              fontSize: '50pt',
+              fontWeight: 900,
+              lineHeight: '1',
+              paddingTop: '3mm',
+            }}>
+              {idSecondPart}
+            </span>
+          </div>
+
+          {/* Item Name */}
+          <div style={{
+            position: 'absolute',
+            left: '2mm',
+            right: '2mm',
+            bottom: '1mm',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+
+          }}>
+            <span style={{
+              fontFamily: "'Univers LT Std Condensed', sans-serif",
+              fontSize: '10pt',
+              hyphens: 'auto',
+              fontWeight: 700,
+              lineHeight: '1.2',
+              textAlign: 'center',
+              wordWrap: 'break-word',
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 4,
+              WebkitBoxOrient: 'vertical',
+            }}>
+              {item.name}
+            </span>
           </div>
         </div>
       </div>

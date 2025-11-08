@@ -95,7 +95,7 @@ export function LabelPreview({ item, labelType, onLabelTypeChange }: LabelPrevie
       <div className="space-y-3">
         <UILabel>Vorschau</UILabel>
         <div className="border-2 border-dashed border-border p-8 bg-muted/20 flex items-center justify-center overflow-auto">
-          <div className="scale-100 origin-center">
+          <div className="border-1 border scale-100 origin-center">
             {renderLabel()}
           </div>
         </div>

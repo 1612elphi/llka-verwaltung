@@ -1,12 +1,11 @@
 /**
- * Compact label design
- * 100mm x 50mm label with smaller QR code for more text space
+ * Compact label design - Horizontal split with multiple QR codes
+ * 100mm x 50mm label with side-by-side ID display
  */
 
 'use client';
 
 import { QRCodeSVG } from 'qrcode.react';
-import Image from 'next/image';
 import { type Item } from '@/types';
 
 interface CompactLabelProps {
@@ -14,7 +13,12 @@ interface CompactLabelProps {
 }
 
 export function CompactLabel({ item }: CompactLabelProps) {
+  // Format the item ID with leading zeros (e.g., "9901")
   const paddedId = String(item.iid).padStart(4, '0');
+
+  // Split ID into two parts for display (e.g., "99" and "01")
+  const idFirstPart = paddedId.slice(0, 2);
+  const idSecondPart = paddedId.slice(2);
 
   return (
     <div
@@ -27,95 +31,133 @@ export function CompactLabel({ item }: CompactLabelProps) {
         overflow: 'hidden',
       }}
     >
+      {/* Main content container */}
       <div style={{
         width: '100%',
         height: '100%',
         display: 'flex',
-        flexDirection: 'row',
-        padding: '4mm',
+        flexDirection: 'column',
         fontFamily: "'Univers LT Std', sans-serif",
         color: 'black',
-        gap: '3mm',
+        border: '2mm black solid',
       }}>
-        {/* Left Section - Logo and QR */}
+        
+        {/* Item Name - Below QR */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '2mm',
-          flexShrink: 0,
+          position: 'absolute',
+          left: '3mm',
+          top: '3mm',
+          fontFamily: "'Univers LT Std Condensed', sans-serif",
+          fontSize: '10pt',
+          fontWeight: 400,
+          lineHeight: '1.1',
+          wordWrap: 'break-word',
+          hyphens: 'auto',
+          overflow: 'hidden',
+          maxHeight: '20mm',
         }}>
+          leih.lokal Karlsruhe - Gerwigstr. 41 - D-76131 Karlsruhe
+        </div>
+
+        {/* Item Name - Below QR */}
+        <div style={{
+          position: 'absolute',
+          left: '3mm',
+          top: '6.5mm',
+          fontFamily: "'Univers LT Std Condensed', sans-serif",
+          fontSize: '11pt',
+          fontWeight: 700,
+          lineHeight: '1.1',
+          wordWrap: 'break-word',
+          hyphens: 'auto',
+          overflow: 'hidden',
+          maxHeight: '20mm',
+        }}>
+          {item.name}
+        </div>
+
+        {/* ID Display Container */}
+        <div style={{
+          position: 'absolute',
+          left: '2mm',
+          top: '11mm',
+          right: '2mm',
+          height: '23mm',
+          display: 'flex',
+          flexDirection: 'row',
+          borderTop: '1mm solid black',
+        }}>
+          {/* ID First Part - Left side (black background) */}
           <div style={{
-            position: 'relative',
-            width: '15mm',
-            height: '15mm',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'black',
+            color: 'white',
           }}>
-            <Image
-              src="/smile.svg"
-              alt="LeihLokal"
-              fill
-              style={{ objectFit: 'contain' }}
-              unoptimized
-            />
+            <span style={{
+              fontFamily: "'Univers LT Std', sans-serif",
+              fontSize: '64pt',
+              fontWeight: 900,
+              lineHeight: '1',
+              paddingTop: '5mm',
+            }}>
+              {idFirstPart}
+            </span>
           </div>
+
+          {/* ID Second Part - Right side (white background) */}
           <div style={{
-            width: '15mm',
-            height: '15mm',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'white',
+            color: 'black',
           }}>
-            <QRCodeSVG
-              value={paddedId}
-              size={57}
-              level="M"
-              includeMargin={false}
-              style={{
-                width: '100%',
-                height: '100%',
-              }}
-            />
+            <span style={{
+              fontFamily: "'Univers LT Std', sans-serif",
+              fontSize: '64pt',
+              fontWeight: 900,
+              lineHeight: '1',
+              paddingTop: '5mm',
+            }}>
+              {idSecondPart}
+            </span>
           </div>
         </div>
 
-        {/* Center Section - Item Name and Address */}
+        {/* Bottom QR codes row */}
         <div style={{
-          flex: 1,
+          position: 'absolute',
+          left: '2mm',
+          bottom: '2mm',
+          right: '2mm',
+          height: '15mm',
           display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-        }}>
-          <div style={{
-            fontFamily: "'Univers LT Std', sans-serif",
-            fontSize: '14pt',
-            fontWeight: 700,
-            lineHeight: '1.2',
-          }}>
-            {item.name}
-          </div>
-          <div style={{
-            fontFamily: "'Univers LT Std Condensed', sans-serif",
-            fontSize: '8pt',
-            fontWeight: 400,
-            lineHeight: '1.3',
-          }}>
-            <div style={{ fontWeight: 700 }}>Leih.Lokal</div>
-            <div>Gerwigstr. 41, 76131 Karlsruhe</div>
-          </div>
-        </div>
-
-        {/* Right Section - ID */}
-        <div style={{
-          display: 'flex',
+          flexDirection: 'row',
+          gap: '1.5mm',
           alignItems: 'center',
-          justifyContent: 'center',
-          borderLeft: '2px solid black',
-          paddingLeft: '3mm',
+          justifyContent: 'space-between',
+          borderTop: '1mm solid black',
+          backgroundColor: 'white',
+          padding: '1.5mm',
         }}>
-          <div style={{
-            fontFamily: "'Univers LT Std', sans-serif",
-            fontSize: '52pt',
-            fontWeight: 900,
-            lineHeight: '1',
-          }}>
-            {paddedId}
-          </div>
+          {Array(7).fill(null).map((_, i) => (
+            <div key={i} style={{ flex: 1, height: '100%' }}>
+              <QRCodeSVG
+                value={paddedId}
+                size={100}
+                level="M"
+                includeMargin={false}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                }}
+              />
+            </div>
+          ))}
         </div>
       </div>
     </div>

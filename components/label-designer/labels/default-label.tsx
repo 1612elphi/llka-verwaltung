@@ -6,7 +6,6 @@
 'use client';
 
 import { QRCodeSVG } from 'qrcode.react';
-import Image from 'next/image';
 import { type Item } from '@/types';
 
 interface DefaultLabelProps {
@@ -14,10 +13,10 @@ interface DefaultLabelProps {
 }
 
 export function DefaultLabel({ item }: DefaultLabelProps) {
-  // Format the item ID with leading zeros (e.g., "0451")
+  // Format the item ID with leading zeros (e.g., "1245")
   const paddedId = String(item.iid).padStart(4, '0');
 
-  // Split ID into two parts for display (e.g., "04" and "51")
+  // Split ID into two parts for display (e.g., "12" and "45")
   const idFirstPart = paddedId.slice(0, 2);
   const idSecondPart = paddedId.slice(2);
 
@@ -40,20 +39,26 @@ export function DefaultLabel({ item }: DefaultLabelProps) {
         flexDirection: 'row',
         fontFamily: "'Univers LT Std', sans-serif",
         color: 'black',
+        border: '2mm black solid',
       }}>
         {/* Left Section - QR Code */}
         <div style={{
           position: 'absolute',
-          left: '4mm',
-          top: '4mm',
-          width: '20mm',
-          height: '20mm',
+          left: '2mm',
+          top: '2mm',
+          width: '42mm',
+          height: '35mm',
+          padding: '2mm',
+          border: '4px black solid', // Invert border color
+          backgroundColor: 'black',
         }}>
           <QRCodeSVG
             value={paddedId}
             size={75}
             level="M"
             includeMargin={false}
+            fgColor="white" // Invert foreground color
+            bgColor="black" // Invert background color
             style={{
               width: '100%',
               height: '100%',
@@ -64,55 +69,64 @@ export function DefaultLabel({ item }: DefaultLabelProps) {
         {/* Item Name - Below QR */}
         <div style={{
           position: 'absolute',
-          left: '4mm',
-          bottom: '4mm',
-          width: '20mm',
-          fontFamily: "'Univers LT Std', sans-serif",
-          fontSize: '6pt',
-          fontWeight: 400,
+          left: '3mm',
+          bottom: '3mm',
+          width: '42mm',
+          fontFamily: "'Univers LT Std Condensed', sans-serif",
+          fontSize: '11pt',
+          fontWeight: 700,
           lineHeight: '1.1',
           wordWrap: 'break-word',
+          hyphens: 'auto',
           overflow: 'hidden',
-          maxHeight: '18mm',
+          maxHeight: '20mm',
         }}>
           {item.name}
         </div>
 
-        {/* Horizontal Address Text - Center */}
+        {/* Vertical Address Text - Center (rotated 90 degrees counterclockwise) */}
         <div style={{
           position: 'absolute',
           left: '50%',
           top: '50%',
-          transform: 'translate(-50%, -50%)',
+          transform: 'translate(-50%, -50%) rotate(-90deg)',
+          transformOrigin: 'center center',
           whiteSpace: 'nowrap',
-          fontFamily: "'Univers LT Std Condensed', sans-serif",
+          fontFamily: "'Univers LT Std', sans-serif",
+          lineHeight: '1',
           fontSize: '7pt',
           fontWeight: 700,
-          letterSpacing: '0.5px',
           textAlign: 'center',
         }}>
-          Leih.Lokal GERWIGSTR. 41 KARLSRUHE
+          leih.lokal GERWIGSTR. 41 KARLSRUHE<br />
+          leih.lokal GERWIGSTR. 41 KARLSRUHE<br />
+          leih.lokal GERWIGSTR. 41 KARLSRUHE<br />
+          leih.lokal GERWIGSTR. 41 KARLSRUHE<br />
+          leih.lokal GERWIGSTR. 41 KARLSRUHE<br />
+          leih.lokal GERWIGSTR. 41 KARLSRUHE
         </div>
 
         {/* ID First Part - Top Right */}
         <div style={{
           position: 'absolute',
-          right: '26mm',
-          top: '4mm',
-          width: '20mm',
-          height: '18mm',
+          right: '2mm',
+          top: '2mm',
+          width: '43mm',
+          height: '23mm',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          border: '2px solid black',
           backgroundColor: 'black',
           color: 'white',
         }}>
           <span style={{
             fontFamily: "'Univers LT Std', sans-serif",
-            fontSize: '48pt',
+            fontSize: '72pt',
             fontWeight: 900,
             lineHeight: '1',
+            whiteSpace: 'nowrap',
+            textAlign: 'center',
+            paddingTop: '6mm',
           }}>
             {idFirstPart}
           </span>
@@ -121,10 +135,10 @@ export function DefaultLabel({ item }: DefaultLabelProps) {
         {/* ID Second Part - Bottom Right */}
         <div style={{
           position: 'absolute',
-          right: '26mm',
-          bottom: '4mm',
-          width: '20mm',
-          height: '18mm',
+          right: '2mm',
+          bottom: '2mm',
+          width: '43mm',
+          height: '23mm',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -134,30 +148,13 @@ export function DefaultLabel({ item }: DefaultLabelProps) {
         }}>
           <span style={{
             fontFamily: "'Univers LT Std', sans-serif",
-            fontSize: '48pt',
+            fontSize: '72pt',
             fontWeight: 900,
             lineHeight: '1',
+            paddingTop: '6mm',
           }}>
             {idSecondPart}
           </span>
-        </div>
-
-        {/* Logo - Far Right */}
-        <div style={{
-          position: 'absolute',
-          right: '4mm',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: '18mm',
-          height: '18mm',
-        }}>
-          <Image
-            src="/smile.svg"
-            alt="LeihLokal"
-            fill
-            style={{ objectFit: 'contain' }}
-            unoptimized
-          />
         </div>
       </div>
     </div>
