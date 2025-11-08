@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -99,6 +99,7 @@ interface RentalDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave?: (rental: Rental) => void;
+  preloadedItems?: Item[];
 }
 
 export function RentalDetailSheet({
@@ -106,10 +107,14 @@ export function RentalDetailSheet({
   open,
   onOpenChange,
   onSave,
+  preloadedItems = [],
 }: RentalDetailSheetProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Track if preloaded items have been applied to prevent re-applying on every render
+  const preloadedItemsAppliedRef = useRef(false);
 
   // Customer state
   const [customerSearch, setCustomerSearch] = useState('');
@@ -195,27 +200,45 @@ export function RentalDetailSheet({
         employee: rental.employee || '',
         employee_back: rental.employee_back || '',
       });
+
+      // Reset the preloaded items flag when viewing existing rental
+      preloadedItemsAppliedRef.current = false;
     } else if (isNewRental && open) {
-      // Reset for new rental
-      setSelectedCustomer(null);
-      setSelectedItems([]);
+      // Only apply preloaded items once when modal first opens
+      if (!preloadedItemsAppliedRef.current) {
+        // Reset for new rental
+        setSelectedCustomer(null);
 
-      const defaultRentedOn = new Date().toISOString().split('T')[0];
-      const defaultExpectedOn = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        // Use preloaded items if provided
+        const itemsToUse = preloadedItems.length > 0 ? preloadedItems : [];
+        setSelectedItems(itemsToUse);
 
-      form.reset({
-        customer_iid: 0,
-        item_iids: [],
-        deposit: 0,
-        deposit_back: 0,
-        rented_on: defaultRentedOn,
-        returned_on: '',
-        expected_on: defaultExpectedOn,
-        extended_on: '',
-        remark: '',
-        employee: '',
-        employee_back: '',
-      });
+        // Calculate total deposit from preloaded items
+        const totalDeposit = itemsToUse.reduce((sum, item) => sum + (item.deposit || 0), 0);
+
+        const defaultRentedOn = new Date().toISOString().split('T')[0];
+        const defaultExpectedOn = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        form.reset({
+          customer_iid: 0,
+          item_iids: itemsToUse.map(item => item.iid),
+          deposit: totalDeposit,
+          deposit_back: 0,
+          rented_on: defaultRentedOn,
+          returned_on: '',
+          expected_on: defaultExpectedOn,
+          extended_on: '',
+          remark: '',
+          employee: '',
+          employee_back: '',
+        });
+
+        // Mark preloaded items as applied
+        preloadedItemsAppliedRef.current = true;
+      }
+    } else if (!open) {
+      // Reset flag when modal closes
+      preloadedItemsAppliedRef.current = false;
     }
   }, [rental, isNewRental, form, open, setValue]);
 

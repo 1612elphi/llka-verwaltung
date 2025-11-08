@@ -18,6 +18,8 @@ import {
   LogOut,
   MoreVertical,
   User,
+  Command,
+  Zap,
 } from 'lucide-react';
 import { NavLink } from './nav-link';
 import { Button } from '@/components/ui/button';
@@ -30,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
+import { useQuickFind } from '@/hooks/use-quick-find';
 
 const navigationItems = [
   {
@@ -61,10 +64,17 @@ const navigationItems = [
 
 export function Navbar() {
   const { user, logout } = useAuth();
+  const { setOpen } = useQuickFind();
   const userEmail = (user as any)?.email || 'admin@leihlokal.de';
 
   // State for current time
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Detect OS for keyboard shortcut display
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
+  }, []);
 
   // Update time every second
   useEffect(() => {
@@ -130,6 +140,21 @@ export function Navbar() {
             {formatDate(currentTime)}
           </div>
         </div>
+
+        {/* Quick Find Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="mr-2 h-7 px-2 gap-1.5 hover:bg-accent transition-colors"
+          title="Quick Find (Cmd+P)"
+        >
+          <Zap className="h-3 w-3" />
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1 py-0.5 text-[9px] font-medium bg-muted border border-border rounded">
+            <Command className="h-2 w-2" />
+            <span>P</span>
+          </kbd>
+        </Button>
 
         {/* Overflow Menu */}
         <div className="flex items-center">

@@ -6,6 +6,7 @@
 
 import { Navbar } from '@/components/layout/navbar';
 import { GlobalCommandMenu } from '@/components/search/global-command-menu';
+import { QuickFindModal } from '@/components/search/quick-find-modal';
 import { useRequireAuth } from '@/hooks/use-auth';
 
 export default function DashboardLayout({
@@ -33,6 +34,7 @@ export default function DashboardLayout({
         {children}
       </main>
       <GlobalCommandMenu />
+      <QuickFindModal />
     </div>
   );
 }

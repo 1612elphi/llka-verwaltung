@@ -186,7 +186,7 @@ export const itemsColumnConfig: EntityColumnConfig = {
     {
       id: 'status',
       label: 'Status',
-      defaultVisible: false,
+      defaultVisible: true,
       sortable: true,
     },
     {
