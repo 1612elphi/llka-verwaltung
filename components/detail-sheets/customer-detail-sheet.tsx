@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { PencilIcon, SaveIcon, XIcon } from 'lucide-react';
+import { PencilIcon, SaveIcon, XIcon, MailIcon, PhoneIcon, MapPinIcon, CalendarIcon } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -73,6 +73,8 @@ export function CustomerDetailSheet({
   const [rentals, setRentals] = useState<RentalExpanded[]>([]);
   const [reservations, setReservations] = useState<ReservationExpanded[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [showAllRentals, setShowAllRentals] = useState(false);
+  const [showAllReservations, setShowAllReservations] = useState(false);
 
   const isNewCustomer = !customer?.id;
 
@@ -320,259 +322,311 @@ export function CustomerDetailSheet({
             </div>
           )}
 
-          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-8 px-6">
-            {/* Basic Information */}
-            <section className="space-y-4">
-              <div className="border-b pb-2 mb-4">
-                <h3 className="font-semibold text-lg">Basisdaten</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstname">Vorname *</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="firstname"
-                      {...form.register('firstname')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{customer?.firstname || '—'}</p>
-                  )}
-                  {form.formState.errors.firstname && (
-                    <p className="text-sm text-destructive mt-1">
-                      {form.formState.errors.firstname.message}
-                    </p>
-                  )}
+          {/* Important Alert - Highlight Color & Remark */}
+          {!isNewCustomer && !isEditMode && (customer?.highlight_color || customer?.remark) && (
+            <div className="px-6 mb-6">
+              {customer?.highlight_color && (
+                <div className={`rounded-lg p-4 mb-3 border-l-4 ${
+                  customer.highlight_color === 'red' ? 'bg-red-50 dark:bg-red-950/20 border-red-500' :
+                  customer.highlight_color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-500' :
+                  customer.highlight_color === 'blue' ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-500' :
+                  'bg-green-50 dark:bg-green-950/20 border-green-500'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {getHighlightColorBadge(customer.highlight_color)}
+                    <span className="text-sm font-medium">Markierter Kunde</span>
+                  </div>
                 </div>
-
-                <div>
-                  <Label htmlFor="lastname">Nachname *</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="lastname"
-                      {...form.register('lastname')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{customer?.lastname || '—'}</p>
-                  )}
-                  {form.formState.errors.lastname && (
-                    <p className="text-sm text-destructive mt-1">
-                      {form.formState.errors.lastname.message}
-                    </p>
-                  )}
+              )}
+              {customer?.remark && (
+                <div className={`rounded-lg p-4 border-l-4 ${
+                  customer.highlight_color === 'red' ? 'bg-red-50 dark:bg-red-950/20 border-red-500' :
+                  customer.highlight_color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-500' :
+                  customer.highlight_color === 'blue' ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-500' :
+                  customer.highlight_color === 'green' ? 'bg-green-50 dark:bg-green-950/20 border-green-500' :
+                  'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-500'
+                }`}>
+                  <div className="text-base font-semibold mb-1">Wichtige Notiz:</div>
+                  <p className="text-base whitespace-pre-wrap">{customer.remark}</p>
                 </div>
+              )}
+            </div>
+          )}
 
-                <div>
-                  <Label htmlFor="email">E-Mail</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="email"
-                      type="email"
-                      {...form.register('email')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{customer?.email || '—'}</p>
-                  )}
-                  {form.formState.errors.email && (
-                    <p className="text-sm text-destructive mt-1">
-                      {form.formState.errors.email.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="phone">Telefon</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="phone"
-                      {...form.register('phone')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{customer?.phone || '—'}</p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Address */}
-            <section className="space-y-4">
-              <div className="border-b pb-2 mb-4">
-                <h3 className="font-semibold text-lg">Adresse</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="street">Straße</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="street"
-                      {...form.register('street')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{customer?.street || '—'}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="postal_code">PLZ</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="postal_code"
-                      {...form.register('postal_code')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{customer?.postal_code || '—'}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="city">Stadt</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="city"
-                      {...form.register('city')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{customer?.city || '—'}</p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Registration Details */}
-            <section className="space-y-4">
-              <div className="border-b pb-2 mb-4">
-                <h3 className="font-semibold text-lg">Registrierung</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="registered_on">Registriert am</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="registered_on"
-                      type="date"
-                      {...form.register('registered_on')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">
-                      {customer ? formatDate(customer.registered_on) : '—'}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="renewed_on">Verlängert am</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="renewed_on"
-                      type="date"
-                      {...form.register('renewed_on')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">
-                      {customer?.renewed_on ? formatDate(customer.renewed_on) : '—'}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="heard">Gehört über</Label>
-                  {isEditMode ? (
-                    <Input
-                      id="heard"
-                      {...form.register('heard')}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm">{customer?.heard || '—'}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="newsletter">Newsletter</Label>
-                  {isEditMode ? (
-                    <div className="flex items-center mt-1">
-                      <input
-                        id="newsletter"
-                        type="checkbox"
-                        {...form.register('newsletter')}
-                        className="mr-2"
+          <form onSubmit={form.handleSubmit(handleSave)} className={isEditMode ? "space-y-6 px-6" : "space-y-4 px-6"}>
+            {isEditMode ? (
+              /* Edit Mode - Traditional Form Layout */
+              <>
+                {/* Basic Information */}
+                <section className="space-y-3">
+                  <div className="border-b pb-1 mb-2">
+                    <h3 className="font-semibold text-base">Basisdaten</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="firstname">Vorname *</Label>
+                      <Input
+                        id="firstname"
+                        {...form.register('firstname')}
+                        className="mt-1"
                       />
-                      <span className="text-sm">Abonniert</span>
+                      {form.formState.errors.firstname && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.firstname.message}
+                        </p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="mt-1 text-sm">
-                      {customer?.newsletter ? 'Ja' : 'Nein'}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </section>
 
-            {/* Additional Information */}
-            <section className="space-y-4">
-              <div className="border-b pb-2 mb-4">
-                <h3 className="font-semibold text-lg">Zusätzliche Informationen</h3>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="highlight_color">Markierungsfarbe</Label>
-                  {isEditMode ? (
-                    <select
-                      id="highlight_color"
-                      {...form.register('highlight_color')}
-                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Keine</option>
-                      <option value="green">Grün</option>
-                      <option value="blue">Blau</option>
-                      <option value="yellow">Gelb</option>
-                      <option value="red">Rot</option>
-                    </select>
-                  ) : (
-                    <div className="mt-1">
-                      {getHighlightColorBadge(customer?.highlight_color) || <span className="text-sm">—</span>}
+                    <div>
+                      <Label htmlFor="lastname">Nachname *</Label>
+                      <Input
+                        id="lastname"
+                        {...form.register('lastname')}
+                        className="mt-1"
+                      />
+                      {form.formState.errors.lastname && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.lastname.message}
+                        </p>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div>
-                  <Label htmlFor="remark">Bemerkung</Label>
-                  {isEditMode ? (
-                    <Textarea
-                      id="remark"
-                      {...form.register('remark')}
-                      className="mt-1"
-                      rows={3}
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm whitespace-pre-wrap">
-                      {customer?.remark || '—'}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </section>
+                    <div>
+                      <Label htmlFor="email">E-Mail</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        {...form.register('email')}
+                        className="mt-1"
+                      />
+                      {form.formState.errors.email && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.email.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="phone">Telefon</Label>
+                      <Input
+                        id="phone"
+                        {...form.register('phone')}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Address */}
+                <section className="space-y-3">
+                  <div className="border-b pb-1 mb-2">
+                    <h3 className="font-semibold text-base">Adresse</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Label htmlFor="street">Straße</Label>
+                      <Input
+                        id="street"
+                        {...form.register('street')}
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="postal_code">PLZ</Label>
+                      <Input
+                        id="postal_code"
+                        {...form.register('postal_code')}
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="city">Stadt</Label>
+                      <Input
+                        id="city"
+                        {...form.register('city')}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Registration Details */}
+                <section className="space-y-3">
+                  <div className="border-b pb-1 mb-2">
+                    <h3 className="font-semibold text-base">Registrierung</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="registered_on">Registriert am</Label>
+                      <Input
+                        id="registered_on"
+                        type="date"
+                        {...form.register('registered_on')}
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="renewed_on">Verlängert am</Label>
+                      <Input
+                        id="renewed_on"
+                        type="date"
+                        {...form.register('renewed_on')}
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="heard">Gehört über</Label>
+                      <Input
+                        id="heard"
+                        {...form.register('heard')}
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="newsletter">Newsletter</Label>
+                      <div className="flex items-center mt-1">
+                        <input
+                          id="newsletter"
+                          type="checkbox"
+                          {...form.register('newsletter')}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">Abonniert</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Additional Information */}
+                <section className="space-y-3">
+                  <div className="border-b pb-1 mb-2">
+                    <h3 className="font-semibold text-base">Zusätzliche Informationen</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="highlight_color">Markierungsfarbe</Label>
+                      <select
+                        id="highlight_color"
+                        {...form.register('highlight_color')}
+                        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Keine</option>
+                        <option value="green">Grün</option>
+                        <option value="blue">Blau</option>
+                        <option value="yellow">Gelb</option>
+                        <option value="red">Rot</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="remark">Bemerkung</Label>
+                      <Textarea
+                        id="remark"
+                        {...form.register('remark')}
+                        className="mt-1"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </section>
+              </>
+            ) : (
+              /* View Mode - Card-Based Layout */
+              <>
+                {/* Contact Information Card */}
+                <section>
+                  <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
+                    {customer?.email && (
+                      <div className="flex items-center gap-3">
+                        <MailIcon className="size-5 text-muted-foreground shrink-0" />
+                        <a href={`mailto:${customer.email}`} className="text-base hover:underline">
+                          {customer.email}
+                        </a>
+                      </div>
+                    )}
+                    {customer?.phone && (
+                      <div className="flex items-center gap-3">
+                        <PhoneIcon className="size-5 text-muted-foreground shrink-0" />
+                        <a href={`tel:${customer.phone}`} className="text-base hover:underline">
+                          {customer.phone}
+                        </a>
+                      </div>
+                    )}
+                    {(!customer?.email && !customer?.phone) && (
+                      <p className="text-sm text-muted-foreground italic">Keine Kontaktinformationen hinterlegt</p>
+                    )}
+                  </div>
+                </section>
+
+                {/* Address Card (only if exists) */}
+                {(customer?.street || customer?.city) && (
+                  <section>
+                    <div className="border rounded-lg p-4 bg-muted/30">
+                      <div className="flex items-start gap-3">
+                        <MapPinIcon className="size-5 text-muted-foreground shrink-0 mt-0.5" />
+                        <div className="text-base">
+                          {customer?.street && <div>{customer.street}</div>}
+                          {(customer?.postal_code || customer?.city) && (
+                            <div>{customer?.postal_code} {customer?.city}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {/* Metadata Row */}
+                <section>
+                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="size-4" />
+                      <span>Registriert: {customer ? formatDate(customer.registered_on) : '—'}</span>
+                    </div>
+                    {customer?.renewed_on && (
+                      <div className="flex items-center gap-2">
+                        <span>•</span>
+                        <span>Verlängert: {formatDate(customer.renewed_on)}</span>
+                      </div>
+                    )}
+                    {customer?.newsletter && (
+                      <div className="flex items-center gap-2">
+                        <span>•</span>
+                        <Badge variant="secondary" className="text-xs">Newsletter</Badge>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </>
+            )}
 
             {/* Reservation History */}
             {!isNewCustomer && (
-              <section className="space-y-4">
-                <div className="border-b pb-2 mb-4">
-                  <h3 className="font-semibold text-lg">Reservierungen</h3>
+              <section className="space-y-3">
+                <div className="border-b pb-1 mb-2 flex items-center justify-between">
+                  <h3 className="font-semibold text-base">Reservierungen</h3>
+                  {reservations.length > 5 && !isEditMode && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAllReservations(!showAllReservations)}
+                      className="text-xs"
+                    >
+                      {showAllReservations ? 'Weniger anzeigen' : `Alle ${reservations.length} anzeigen`}
+                    </Button>
+                  )}
                 </div>
                 {isLoadingHistory ? (
                   <div className="flex justify-center py-4">
                     <div className="h-6 w-6 animate-spin border-4 border-primary border-t-transparent rounded-full" />
                   </div>
                 ) : reservations.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded-md">
+                  <p className="text-sm text-muted-foreground py-3 text-center bg-muted/30 rounded-md">
                     Keine Reservierungen
                   </p>
                 ) : (
@@ -580,25 +634,25 @@ export function CustomerDetailSheet({
                     <table className="w-full text-sm">
                       <thead className="bg-muted/70">
                         <tr className="border-b">
-                          <th className="px-4 py-3 text-left font-semibold">Abholung</th>
-                          <th className="px-4 py-3 text-left font-semibold">Artikel</th>
-                          <th className="px-4 py-3 text-left font-semibold">Status</th>
-                          <th className="px-4 py-3 text-left font-semibold">Kommentar</th>
+                          <th className="px-3 py-2 text-left font-semibold">Abholung</th>
+                          <th className="px-3 py-2 text-left font-semibold">Artikel</th>
+                          <th className="px-3 py-2 text-left font-semibold">Status</th>
+                          <th className="px-3 py-2 text-left font-semibold">Kommentar</th>
                         </tr>
                       </thead>
                       <tbody className="bg-background">
-                        {reservations.map((reservation) => (
+                        {(showAllReservations ? reservations : reservations.slice(0, 5)).map((reservation) => (
                           <tr key={reservation.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                            <td className="px-4 py-3 font-medium">{formatDate(reservation.pickup)}</td>
-                            <td className="px-4 py-3 text-muted-foreground">
+                            <td className="px-3 py-2 font-medium">{formatDate(reservation.pickup)}</td>
+                            <td className="px-3 py-2 text-muted-foreground">
                               {reservation.expand?.items?.length || 0} Artikel
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-2">
                               <Badge variant={reservation.done ? 'secondary' : 'default'}>
                                 {reservation.done ? 'Erledigt' : 'Offen'}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3 text-muted-foreground">{reservation.comments || '—'}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{reservation.comments || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -610,16 +664,27 @@ export function CustomerDetailSheet({
 
             {/* Rental History */}
             {!isNewCustomer && (
-              <section className="space-y-4">
-                <div className="border-b pb-2 mb-4">
-                  <h3 className="font-semibold text-lg">Leihverlauf</h3>
+              <section className="space-y-3">
+                <div className="border-b pb-1 mb-2 flex items-center justify-between">
+                  <h3 className="font-semibold text-base">Leihverlauf</h3>
+                  {rentals.length > 5 && !isEditMode && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAllRentals(!showAllRentals)}
+                      className="text-xs"
+                    >
+                      {showAllRentals ? 'Weniger anzeigen' : `Alle ${rentals.length} anzeigen`}
+                    </Button>
+                  )}
                 </div>
                 {isLoadingHistory ? (
                   <div className="flex justify-center py-4">
                     <div className="h-6 w-6 animate-spin border-4 border-primary border-t-transparent rounded-full" />
                   </div>
                 ) : rentals.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center bg-muted/30 rounded-md">
+                  <p className="text-sm text-muted-foreground py-3 text-center bg-muted/30 rounded-md">
                     Keine Leihvorgänge
                   </p>
                 ) : (
@@ -627,15 +692,14 @@ export function CustomerDetailSheet({
                     <table className="w-full text-sm">
                       <thead className="bg-muted/70">
                         <tr className="border-b">
-                          <th className="px-4 py-3 text-left font-semibold">Ausgeliehen</th>
-                          <th className="px-4 py-3 text-left font-semibold">Erwartet</th>
-                          <th className="px-4 py-3 text-left font-semibold">Zurückgegeben</th>
-                          <th className="px-4 py-3 text-left font-semibold">Artikel</th>
-                          <th className="px-4 py-3 text-left font-semibold">Status</th>
+                          <th className="px-3 py-2 text-left font-semibold">Ausgeliehen</th>
+                          <th className="px-3 py-2 text-left font-semibold">Zurückgegeben</th>
+                          <th className="px-3 py-2 text-left font-semibold">Artikel</th>
+                          <th className="px-3 py-2 text-left font-semibold">Status</th>
                         </tr>
                       </thead>
                       <tbody className="bg-background">
-                        {rentals.map((rental) => {
+                        {(showAllRentals ? rentals : rentals.slice(0, 5)).map((rental) => {
                           const status = calculateRentalStatus(
                             rental.rented_on,
                             rental.returned_on,
@@ -644,15 +708,14 @@ export function CustomerDetailSheet({
                           );
                           return (
                             <tr key={rental.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                              <td className="px-4 py-3 font-medium">{formatDate(rental.rented_on)}</td>
-                              <td className="px-4 py-3 text-muted-foreground">{formatDate(rental.expected_on)}</td>
-                              <td className="px-4 py-3 text-muted-foreground">
+                              <td className="px-3 py-2 font-medium">{formatDate(rental.rented_on)}</td>
+                              <td className="px-3 py-2 text-muted-foreground">
                                 {rental.returned_on ? formatDate(rental.returned_on) : '—'}
                               </td>
-                              <td className="px-4 py-3 text-muted-foreground">
+                              <td className="px-3 py-2 text-muted-foreground">
                                 {rental.expand?.items?.length || 0} Artikel
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-3 py-2">
                                 <Badge variant={status === 'overdue' ? 'destructive' : 'secondary'}>
                                   {status}
                                 </Badge>

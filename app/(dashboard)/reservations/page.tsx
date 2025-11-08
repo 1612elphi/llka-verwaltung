@@ -5,7 +5,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, CheckCircle2Icon } from 'lucide-react';
 import { SearchBar } from '@/components/search/search-bar';
 import { FilterPopover } from '@/components/search/filter-popover';
 import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
@@ -290,12 +290,14 @@ export default function ReservationsPage() {
                       )}
                       {columnVisibility.isColumnVisible('status') && (
                         <th className="px-4 py-2 text-left">
-                          <SortableHeader
-                            label="Status"
-                            sortDirection={getSortDirection('status')}
-                            onSort={() => handleSort('status')}
+                          <button
+                            onClick={() => handleSort('status')}
                             disabled={isLoading}
-                          />
+                            className="flex items-center gap-1 hover:text-primary transition-colors"
+                            title="Status"
+                          >
+                            <CheckCircle2Icon className="size-4" />
+                          </button>
                         </th>
                       )}
                       {columnVisibility.isColumnVisible('customer_email') && (
@@ -349,12 +351,17 @@ export default function ReservationsPage() {
                       >
                         {columnVisibility.isColumnVisible('customer_name') && (
                           <td className="px-4 py-3">
-                            <div>
+                            <div className="flex items-center gap-2">
                               <span className="font-medium">
+                                {!reservation.is_new_customer && reservation.customer_iid && (
+                                  <span className="font-mono text-primary mr-2">
+                                    #{String(reservation.customer_iid).padStart(4, '0')}
+                                  </span>
+                                )}
                                 {reservation.customer_name}
                               </span>
                               {reservation.is_new_customer && (
-                                <Badge variant="outline" className="ml-2">
+                                <Badge variant="outline">
                                   Neukunde
                                 </Badge>
                               )}

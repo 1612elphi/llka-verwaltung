@@ -48,6 +48,24 @@ export const customersColumnConfig: EntityColumnConfig = {
       sortable: true,
     },
     {
+      id: 'active_reservations',
+      label: 'Aktive Reservierungen',
+      defaultVisible: true,
+      sortable: false, // Computed client-side
+    },
+    {
+      id: 'active_rentals',
+      label: 'Aktive Ausleihen',
+      defaultVisible: true,
+      sortable: false, // Computed client-side
+    },
+    {
+      id: 'total_rentals',
+      label: 'Gesamt Ausleihen',
+      defaultVisible: true,
+      sortable: false, // Computed client-side
+    },
+    {
       id: 'street',
       label: 'Straße',
       defaultVisible: false,
@@ -68,7 +86,7 @@ export const customersColumnConfig: EntityColumnConfig = {
     {
       id: 'registered_on',
       label: 'Registriert',
-      defaultVisible: true,
+      defaultVisible: false,
       sortable: true,
     },
     {
@@ -132,7 +150,7 @@ export const itemsColumnConfig: EntityColumnConfig = {
     {
       id: 'model',
       label: 'Modell',
-      defaultVisible: false,
+      defaultVisible: true,
       sortable: true,
     },
     {
@@ -142,15 +160,33 @@ export const itemsColumnConfig: EntityColumnConfig = {
       sortable: false, // Category is an array
     },
     {
-      id: 'status',
-      label: 'Status',
+      id: 'deposit',
+      label: 'Kaution/Tara',
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'deposit',
-      label: 'Kaution',
+      id: 'parts',
+      label: 'Teile',
       defaultVisible: true,
+      sortable: true,
+    },
+    {
+      id: 'copies',
+      label: 'Exemplare',
+      defaultVisible: true,
+      sortable: true,
+    },
+    {
+      id: 'total_rentals',
+      label: 'Gesamt Ausleihen',
+      defaultVisible: true,
+      sortable: false, // Computed client-side
+    },
+    {
+      id: 'status',
+      label: 'Status',
+      defaultVisible: false,
       sortable: true,
     },
     {
@@ -168,18 +204,6 @@ export const itemsColumnConfig: EntityColumnConfig = {
     {
       id: 'manual',
       label: 'Anleitung',
-      defaultVisible: false,
-      sortable: true,
-    },
-    {
-      id: 'parts',
-      label: 'Teile',
-      defaultVisible: false,
-      sortable: true,
-    },
-    {
-      id: 'copies',
-      label: 'Exemplare',
       defaultVisible: false,
       sortable: true,
     },
@@ -301,12 +325,6 @@ export const reservationsColumnConfig: EntityColumnConfig = {
       sortable: true,
     },
     {
-      id: 'customer_email',
-      label: 'Email',
-      defaultVisible: false,
-      sortable: true,
-    },
-    {
       id: 'items',
       label: 'Gegenstände',
       defaultVisible: true,
@@ -314,7 +332,7 @@ export const reservationsColumnConfig: EntityColumnConfig = {
     },
     {
       id: 'pickup',
-      label: 'Abholung',
+      label: 'Wunschdatum',
       defaultVisible: true,
       sortable: true,
     },
@@ -324,6 +342,12 @@ export const reservationsColumnConfig: EntityColumnConfig = {
       defaultVisible: true,
       sortable: true,
       sortField: 'done',
+    },
+    {
+      id: 'customer_email',
+      label: 'Email',
+      defaultVisible: false,
+      sortable: true,
     },
     {
       id: 'customer_iid',

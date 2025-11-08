@@ -5,7 +5,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, BadgeCheckIcon, CoinsIcon, WalletIcon } from 'lucide-react';
 import { SearchBar } from '@/components/search/search-bar';
 import { FilterPopover } from '@/components/search/filter-popover';
 import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
@@ -301,12 +301,7 @@ export default function RentalsPage() {
                       )}
                       {columnVisibility.isColumnVisible('status') && (
                         <th className="px-4 py-2 text-left">
-                          <SortableHeader
-                            label="Status"
-                            sortDirection={getSortDirection('status')}
-                            onSort={() => handleSort('status')}
-                            disabled={isLoading}
-                          />
+                          <BadgeCheckIcon className="size-4" title="Status" />
                         </th>
                       )}
                       {columnVisibility.isColumnVisible('extended_on') && (
@@ -321,22 +316,26 @@ export default function RentalsPage() {
                       )}
                       {columnVisibility.isColumnVisible('deposit') && (
                         <th className="px-4 py-2 text-left">
-                          <SortableHeader
-                            label="Kaution"
-                            sortDirection={getSortDirection('deposit')}
-                            onSort={() => handleSort('deposit')}
+                          <button
+                            onClick={() => handleSort('deposit')}
                             disabled={isLoading}
-                          />
+                            className="flex items-center gap-1 hover:text-primary transition-colors"
+                            title="Kaution"
+                          >
+                            <CoinsIcon className="size-4" />
+                          </button>
                         </th>
                       )}
                       {columnVisibility.isColumnVisible('deposit_back') && (
                         <th className="px-4 py-2 text-left">
-                          <SortableHeader
-                            label="Kaution zurück"
-                            sortDirection={getSortDirection('deposit_back')}
-                            onSort={() => handleSort('deposit_back')}
+                          <button
+                            onClick={() => handleSort('deposit_back')}
                             disabled={isLoading}
-                          />
+                            className="flex items-center gap-1 hover:text-primary transition-colors"
+                            title="Kaution zurück"
+                          >
+                            <WalletIcon className="size-4" />
+                          </button>
                         </th>
                       )}
                       {columnVisibility.isColumnVisible('remark') && (
@@ -392,6 +391,9 @@ export default function RentalsPage() {
                             <td className="px-4 py-3">
                               {rental.expand?.customer ? (
                                 <span className="font-medium">
+                                  <span className="font-mono text-primary mr-2">
+                                    #{String(rental.expand.customer.iid).padStart(4, '0')}
+                                  </span>
                                   {rental.expand.customer.firstname}{' '}
                                   {rental.expand.customer.lastname}
                                 </span>
@@ -403,7 +405,15 @@ export default function RentalsPage() {
                           {columnVisibility.isColumnVisible('items') && (
                             <td className="px-4 py-3 text-sm">
                               {rental.expand?.items?.length > 0
-                                ? rental.expand.items.map((item) => item.name).join(', ')
+                                ? rental.expand.items.map((item) => (
+                                    <span key={item.id} className="inline-block mr-2">
+                                      <span className="font-mono text-primary">
+                                        #{String(item.iid).padStart(4, '0')}
+                                      </span>
+                                      {' '}
+                                      {item.name}
+                                    </span>
+                                  ))
                                 : `${rental.items.length} Gegenstände`}
                             </td>
                           )}

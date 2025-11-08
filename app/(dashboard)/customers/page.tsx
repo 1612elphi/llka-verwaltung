@@ -5,7 +5,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, HeartIcon, CalendarCheckIcon, PackageIcon, HistoryIcon } from 'lucide-react';
 import { SearchBar } from '@/components/search/search-bar';
 import { FilterPopover } from '@/components/search/filter-popover';
 import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
@@ -284,6 +284,21 @@ export default function CustomersPage() {
                         />
                       </th>
                     )}
+                    {columnVisibility.isColumnVisible('active_reservations') && (
+                      <th className="px-4 py-2 text-left">
+                        <CalendarCheckIcon className="size-4" title="Aktive Reservierungen" />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('active_rentals') && (
+                      <th className="px-4 py-2 text-left">
+                        <PackageIcon className="size-4" title="Aktive Ausleihen" />
+                      </th>
+                    )}
+                    {columnVisibility.isColumnVisible('total_rentals') && (
+                      <th className="px-4 py-2 text-left">
+                        <HistoryIcon className="size-4" title="Gesamt Ausleihen" />
+                      </th>
+                    )}
                     {columnVisibility.isColumnVisible('street') && (
                       <th className="px-4 py-2 text-left">
                         <SortableHeader
@@ -371,7 +386,15 @@ export default function CustomersPage() {
                     <tr
                       key={customer.id}
                       onClick={() => handleRowClick(customer)}
-                      className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                      className={`hover:bg-muted/50 transition-colors cursor-pointer ${
+                        customer.highlight_color && customer.highlight_color !== 'green'
+                          ? `border-b-4 ${
+                              customer.highlight_color === 'red' ? 'border-b-red-500' :
+                              customer.highlight_color === 'yellow' ? 'border-b-yellow-500' :
+                              'border-b-blue-500'
+                            }`
+                          : 'border-b'
+                      }`}
                     >
                       {columnVisibility.isColumnVisible('iid') && (
                         <td className="px-4 py-3 font-mono text-sm">
@@ -380,7 +403,26 @@ export default function CustomersPage() {
                       )}
                       {columnVisibility.isColumnVisible('name') && (
                         <td className="px-4 py-3">
-                          {customer.firstname} {customer.lastname}
+                          <div className="flex items-center gap-2">
+                            {customer.highlight_color && (
+                              customer.highlight_color === 'green' ? (
+                                <HeartIcon
+                                  className="size-4 fill-green-500 text-green-500 shrink-0"
+                                  title="Teil des Teams"
+                                />
+                              ) : (
+                                <div
+                                  className={`size-3 rounded-full shrink-0 ${
+                                    customer.highlight_color === 'red' ? 'bg-red-500' :
+                                    customer.highlight_color === 'yellow' ? 'bg-yellow-500' :
+                                    'bg-blue-500'
+                                  }`}
+                                  title={`Markiert: ${customer.highlight_color}`}
+                                />
+                              )
+                            )}
+                            <span>{customer.firstname} {customer.lastname}</span>
+                          </div>
                         </td>
                       )}
                       {columnVisibility.isColumnVisible('email') && (
@@ -391,6 +433,24 @@ export default function CustomersPage() {
                       {columnVisibility.isColumnVisible('phone') && (
                         <td className="px-4 py-3 text-sm text-muted-foreground">
                           {customer.phone || '—'}
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('active_reservations') && (
+                        <td className="px-4 py-3 text-sm text-center">
+                          {/* TODO: Compute active reservations count */}
+                          —
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('active_rentals') && (
+                        <td className="px-4 py-3 text-sm text-center">
+                          {/* TODO: Compute active rentals count */}
+                          —
+                        </td>
+                      )}
+                      {columnVisibility.isColumnVisible('total_rentals') && (
+                        <td className="px-4 py-3 text-sm text-center">
+                          {/* TODO: Compute total rentals count */}
+                          —
                         </td>
                       )}
                       {columnVisibility.isColumnVisible('street') && (

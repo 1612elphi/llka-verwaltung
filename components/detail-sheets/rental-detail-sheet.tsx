@@ -150,38 +150,14 @@ export function RentalDetailSheet({
     },
   });
 
-  const { formState: { isDirty }, watch, setValue } = form;
-  const rentedOn = watch('rented_on');
-  const expectedOn = watch('expected_on');
-  const extendedOn = watch('extended_on');
-  const returnedOn = watch('returned_on');
-
-  // Display values for date inputs
-  const [rentedOnDisplay, setRentedOnDisplay] = useState(formatDateDisplay(stringToDate(rentedOn)));
-  const [expectedOnDisplay, setExpectedOnDisplay] = useState(formatDateDisplay(stringToDate(expectedOn)));
-  const [extendedOnDisplay, setExtendedOnDisplay] = useState(formatDateDisplay(stringToDate(extendedOn)));
-  const [returnedOnDisplay, setReturnedOnDisplay] = useState(formatDateDisplay(stringToDate(returnedOn)));
-
-  // Update display values when form values change
-  useEffect(() => {
-    setRentedOnDisplay(formatDateDisplay(stringToDate(rentedOn)));
-  }, [rentedOn]);
-
-  useEffect(() => {
-    setExpectedOnDisplay(formatDateDisplay(stringToDate(expectedOn)));
-  }, [expectedOn]);
-
-  useEffect(() => {
-    setExtendedOnDisplay(formatDateDisplay(stringToDate(extendedOn)));
-  }, [extendedOn]);
-
-  useEffect(() => {
-    setReturnedOnDisplay(formatDateDisplay(stringToDate(returnedOn)));
-  }, [returnedOn]);
+  const { formState: { isDirty }, watch, setValue, getValues } = form;
+  const watchedValues = watch(['rented_on', 'expected_on', 'extended_on', 'returned_on']);
+  const [rentedOn, expectedOn, extendedOn, returnedOn] = watchedValues;
 
   // Load rental data when rental changes
   useEffect(() => {
     if (rental && open) {
+
       // Set customer if expanded
       if (rental.expand?.customer) {
         setSelectedCustomer(rental.expand.customer);
@@ -196,11 +172,17 @@ export function RentalDetailSheet({
         setValue('deposit', rental.deposit ?? firstItem.deposit ?? 0);
       }
 
-      // Set form values
-      const rentedOnValue = rental.rented_on ? rental.rented_on.split('T')[0] : new Date().toISOString().split('T')[0];
-      const returnedOnValue = rental.returned_on ? rental.returned_on.split('T')[0] : '';
-      const expectedOnValue = rental.expected_on ? rental.expected_on.split('T')[0] : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const extendedOnValue = rental.extended_on ? rental.extended_on.split('T')[0] : '';
+      // Set form values - handle both 'T' and space separators in date strings
+      const parseDate = (dateStr: string | undefined) => {
+        if (!dateStr) return '';
+        // Handle both ISO format (2022-11-10T00:00:00) and space format (2022-11-10 00:00:00)
+        return dateStr.split(/[T\s]/)[0];
+      };
+
+      const rentedOnValue = parseDate(rental.rented_on) || new Date().toISOString().split('T')[0];
+      const returnedOnValue = parseDate(rental.returned_on);
+      const expectedOnValue = parseDate(rental.expected_on) || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const extendedOnValue = parseDate(rental.extended_on);
 
       form.reset({
         customer_iid: rental.expand?.customer?.iid ?? 0,
@@ -215,12 +197,6 @@ export function RentalDetailSheet({
         employee: rental.employee || '',
         employee_back: rental.employee_back || '',
       });
-
-      // Update display values immediately
-      setRentedOnDisplay(formatDateDisplay(stringToDate(rentedOnValue)));
-      setReturnedOnDisplay(formatDateDisplay(stringToDate(returnedOnValue)));
-      setExpectedOnDisplay(formatDateDisplay(stringToDate(expectedOnValue)));
-      setExtendedOnDisplay(formatDateDisplay(stringToDate(extendedOnValue)));
     } else if (isNewRental && open) {
       // Reset for new rental
       setSelectedCustomer(null);
@@ -242,12 +218,6 @@ export function RentalDetailSheet({
         employee: '',
         employee_back: '',
       });
-
-      // Update display values immediately
-      setRentedOnDisplay(formatDateDisplay(stringToDate(defaultRentedOn)));
-      setReturnedOnDisplay('');
-      setExpectedOnDisplay(formatDateDisplay(stringToDate(defaultExpectedOn)));
-      setExtendedOnDisplay('');
     }
   }, [rental, isNewRental, form, open, setValue]);
 
@@ -602,202 +572,204 @@ export function RentalDetailSheet({
           </SheetHeader>
 
           <form onSubmit={form.handleSubmit(handleSave)} className="space-y-8 px-6 overflow-y-auto flex-1">
-            {/* Customer Selection */}
+            {/* Customer and Item Selection */}
             <section className="space-y-4">
               <div className="border-b pb-2 mb-4">
-                <h3 className="font-semibold text-lg">Nutzer:in</h3>
+                <h3 className="font-semibold text-lg">Nutzer:in & Gegenstand</h3>
               </div>
-              <div>
-                <Label htmlFor="customer">Nutzer:in auswählen *</Label>
-                <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={customerSearchOpen}
-                      className="w-full justify-between mt-1"
-                    >
-                      {selectedCustomer
-                        ? `#${String(selectedCustomer.iid).padStart(4, '0')} - ${selectedCustomer.firstname} ${selectedCustomer.lastname}`
-                        : "Nutzer:in auswählen..."}
-                      <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
-                    <Command shouldFilter={false}>
-                      <CommandInput
-                        placeholder="Nutzer:in suchen (Name, Nr, E-Mail)..."
-                        value={customerSearch}
-                        onValueChange={setCustomerSearch}
-                      />
-                      <CommandList>
-                        {isSearchingCustomers ? (
-                          <div className="py-6 text-center text-sm">Suche...</div>
-                        ) : customerResults.length === 0 && customerSearch.length >= 2 ? (
-                          <CommandEmpty>Kein/e Nutzer:in gefunden.</CommandEmpty>
-                        ) : customerResults.length === 0 ? (
-                          <div className="py-6 text-center text-sm text-muted-foreground">
-                            Tippen Sie, um zu suchen...
-                          </div>
-                        ) : (
-                          <CommandGroup>
-                            {customerResults.map((customer) => (
-                              <CommandItem
-                                key={customer.id}
-                                value={customer.id}
-                                onSelect={() => handleCustomerSelect(customer)}
-                              >
-                                <CheckIcon
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedCustomer?.id === customer.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <span className="font-mono text-primary font-semibold mr-2">
-                                  #{String(customer.iid).padStart(4, '0')}
-                                </span>
-                                <span>{customer.firstname} {customer.lastname}</span>
-                                {customer.email && (
-                                  <span className="ml-2 text-muted-foreground text-xs">
-                                    {customer.email}
-                                  </span>
-                                )}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        )}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                {form.formState.errors.customer_iid && (
-                  <p className="text-sm text-destructive mt-1">
-                    {form.formState.errors.customer_iid.message}
-                  </p>
-                )}
-              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Customer Selection */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="customer">Nutzer:in auswählen *</Label>
+                    <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={customerSearchOpen}
+                          className="w-full justify-between mt-1"
+                        >
+                          {selectedCustomer
+                            ? `#${String(selectedCustomer.iid).padStart(4, '0')} - ${selectedCustomer.firstname} ${selectedCustomer.lastname}`
+                            : "Nutzer:in auswählen..."}
+                          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Nutzer:in suchen (Name, Nr, E-Mail)..."
+                            value={customerSearch}
+                            onValueChange={setCustomerSearch}
+                          />
+                          <CommandList>
+                            {isSearchingCustomers ? (
+                              <div className="py-6 text-center text-sm">Suche...</div>
+                            ) : customerResults.length === 0 && customerSearch.length >= 2 ? (
+                              <CommandEmpty>Kein/e Nutzer:in gefunden.</CommandEmpty>
+                            ) : customerResults.length === 0 ? (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                Tippen Sie, um zu suchen...
+                              </div>
+                            ) : (
+                              <CommandGroup>
+                                {customerResults.map((customer) => (
+                                  <CommandItem
+                                    key={customer.id}
+                                    value={customer.id}
+                                    onSelect={() => handleCustomerSelect(customer)}
+                                  >
+                                    <CheckIcon
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        selectedCustomer?.id === customer.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span className="font-mono text-primary font-semibold mr-2">
+                                      #{String(customer.iid).padStart(4, '0')}
+                                    </span>
+                                    <span>{customer.firstname} {customer.lastname}</span>
+                                    {customer.email && (
+                                      <span className="ml-2 text-muted-foreground text-xs">
+                                        {customer.email}
+                                      </span>
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {form.formState.errors.customer_iid && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.customer_iid.message}
+                      </p>
+                    )}
+                  </div>
 
-              {/* Selected Customer Display */}
-              {selectedCustomer && (
-                <div className="border rounded-lg p-4 bg-muted/50">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className="font-mono text-primary font-semibold text-lg">
-                          #{String(selectedCustomer.iid).padStart(4, '0')}
-                        </span>
-                        <span className="font-semibold text-lg">
-                          {selectedCustomer.firstname} {selectedCustomer.lastname}
-                        </span>
-                      </div>
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        {selectedCustomer.email && <p>{selectedCustomer.email}</p>}
-                        {selectedCustomer.phone && <p>{selectedCustomer.phone}</p>}
-                        {selectedCustomer.street && (
-                          <p>{selectedCustomer.street}, {selectedCustomer.postal_code} {selectedCustomer.city}</p>
-                        )}
+                  {/* Selected Customer Display */}
+                  {selectedCustomer && (
+                    <div className="border rounded-lg p-4 bg-muted/50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="font-mono text-primary font-semibold text-lg">
+                              #{String(selectedCustomer.iid).padStart(4, '0')}
+                            </span>
+                            <span className="font-semibold text-lg">
+                              {selectedCustomer.firstname} {selectedCustomer.lastname}
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            {selectedCustomer.email && <p>{selectedCustomer.email}</p>}
+                            {selectedCustomer.phone && <p>{selectedCustomer.phone}</p>}
+                            {selectedCustomer.street && (
+                              <p>{selectedCustomer.street}, {selectedCustomer.postal_code} {selectedCustomer.city}</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </section>
 
-            {/* Item Selection */}
-            <section className="space-y-4">
-              <div className="border-b pb-2 mb-4">
-                <h3 className="font-semibold text-lg">Gegenstand</h3>
-              </div>
-              <div>
-                <Label htmlFor="item">Gegenstand auswählen *</Label>
-                <Popover open={itemSearchOpen} onOpenChange={setItemSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={itemSearchOpen}
-                      className="w-full justify-between mt-1"
-                    >
-                      {selectedItem
-                        ? `#${String(selectedItem.iid).padStart(4, '0')} - ${selectedItem.name}`
-                        : "Gegenstand auswählen..."}
-                      <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
-                    <Command shouldFilter={false}>
-                      <CommandInput
-                        placeholder="Gegenstand suchen (Name, Nr, Marke)..."
-                        value={itemSearch}
-                        onValueChange={setItemSearch}
-                      />
-                      <CommandList>
-                        {isSearchingItems ? (
-                          <div className="py-6 text-center text-sm">Suche...</div>
-                        ) : itemResults.length === 0 && itemSearch.length >= 2 ? (
-                          <CommandEmpty>Kein Gegenstand gefunden.</CommandEmpty>
-                        ) : itemResults.length === 0 ? (
-                          <div className="py-6 text-center text-sm text-muted-foreground">
-                            Tippen Sie, um zu suchen...
+                {/* Item Selection */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="item">Gegenstand auswählen *</Label>
+                    <Popover open={itemSearchOpen} onOpenChange={setItemSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={itemSearchOpen}
+                          className="w-full justify-between mt-1"
+                        >
+                          {selectedItem
+                            ? `#${String(selectedItem.iid).padStart(4, '0')} - ${selectedItem.name}`
+                            : "Gegenstand auswählen..."}
+                          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Gegenstand suchen (Name, Nr, Marke)..."
+                            value={itemSearch}
+                            onValueChange={setItemSearch}
+                          />
+                          <CommandList>
+                            {isSearchingItems ? (
+                              <div className="py-6 text-center text-sm">Suche...</div>
+                            ) : itemResults.length === 0 && itemSearch.length >= 2 ? (
+                              <CommandEmpty>Kein Gegenstand gefunden.</CommandEmpty>
+                            ) : itemResults.length === 0 ? (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                Tippen Sie, um zu suchen...
+                              </div>
+                            ) : (
+                              <CommandGroup>
+                                {itemResults.map((item) => (
+                                  <CommandItem
+                                    key={item.id}
+                                    value={item.id}
+                                    onSelect={() => handleItemSelect(item)}
+                                  >
+                                    <CheckIcon
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        selectedItem?.id === item.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span className="font-mono text-primary font-semibold mr-2">
+                                      #{String(item.iid).padStart(4, '0')}
+                                    </span>
+                                    <span className="flex-1">{item.name}</span>
+                                    <span className="text-muted-foreground text-xs ml-2">
+                                      {formatCurrency(item.deposit)}
+                                    </span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {form.formState.errors.item_iid && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.item_iid.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Selected Item Display */}
+                  {selectedItem && (
+                    <div className="border rounded-lg p-4 bg-muted/50">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="font-mono text-primary font-semibold text-lg">
+                              #{String(selectedItem.iid).padStart(4, '0')}
+                            </span>
+                            <span className="font-semibold text-lg">{selectedItem.name}</span>
                           </div>
-                        ) : (
-                          <CommandGroup>
-                            {itemResults.map((item) => (
-                              <CommandItem
-                                key={item.id}
-                                value={item.id}
-                                onSelect={() => handleItemSelect(item)}
-                              >
-                                <CheckIcon
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedItem?.id === item.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <span className="font-mono text-primary font-semibold mr-2">
-                                  #{String(item.iid).padStart(4, '0')}
-                                </span>
-                                <span className="flex-1">{item.name}</span>
-                                <span className="text-muted-foreground text-xs ml-2">
-                                  {formatCurrency(item.deposit)}
-                                </span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        )}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                {form.formState.errors.item_iid && (
-                  <p className="text-sm text-destructive mt-1">
-                    {form.formState.errors.item_iid.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Selected Item Display */}
-              {selectedItem && (
-                <div className="border rounded-lg p-4 bg-muted/50">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className="font-mono text-primary font-semibold text-lg">
-                          #{String(selectedItem.iid).padStart(4, '0')}
-                        </span>
-                        <span className="font-semibold text-lg">{selectedItem.name}</span>
-                      </div>
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        {selectedItem.brand && <p>Marke: {selectedItem.brand}</p>}
-                        {selectedItem.model && <p>Modell: {selectedItem.model}</p>}
-                        <p className="font-medium text-foreground">
-                          Kaution: {formatCurrency(selectedItem.deposit)}
-                        </p>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            {selectedItem.brand && <p>Marke: {selectedItem.brand}</p>}
+                            {selectedItem.model && <p>Modell: {selectedItem.model}</p>}
+                            <p className="font-medium text-foreground">
+                              Kaution: {formatCurrency(selectedItem.deposit)}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
+              </div>
             </section>
 
             {/* Dates */}
@@ -813,9 +785,9 @@ export function RentalDetailSheet({
                     <div className="relative flex-1">
                       <Input
                         id="rented_on"
-                        value={rentedOnDisplay}
+                        value={rentedOn && stringToDate(rentedOn) ? formatDateDisplay(stringToDate(rentedOn)) : ''}
                         placeholder="Tag auswählen..."
-                        className="bg-background pr-10"
+                        className="bg-background pr-10 cursor-pointer"
                         readOnly
                         onClick={() => setRentedOnPickerOpen(true)}
                       />
@@ -842,7 +814,6 @@ export function RentalDetailSheet({
                             captionLayout="dropdown"
                             onSelect={(date) => {
                               setValue('rented_on', dateToString(date), { shouldDirty: true });
-                              setRentedOnDisplay(formatDateDisplay(date));
                               setRentedOnPickerOpen(false);
                             }}
                           />
@@ -874,9 +845,9 @@ export function RentalDetailSheet({
                     <div className="relative flex-1">
                       <Input
                         id="expected_on"
-                        value={expectedOnDisplay}
+                        value={expectedOn && stringToDate(expectedOn) ? formatDateDisplay(stringToDate(expectedOn)) : ''}
                         placeholder="Tag auswählen..."
-                        className="bg-background pr-10"
+                        className="bg-background pr-10 cursor-pointer"
                         readOnly
                         onClick={() => setExpectedOnPickerOpen(true)}
                       />
@@ -903,7 +874,6 @@ export function RentalDetailSheet({
                             captionLayout="dropdown"
                             onSelect={(date) => {
                               setValue('expected_on', dateToString(date), { shouldDirty: true });
-                              setExpectedOnDisplay(formatDateDisplay(date));
                               setExpectedOnPickerOpen(false);
                             }}
                           />
@@ -951,44 +921,55 @@ export function RentalDetailSheet({
                 {!isNewRental && (
                   <div>
                     <Label htmlFor="extended_on">Verlängert bis</Label>
-                    <div className="relative mt-1">
-                      <Input
-                        id="extended_on"
-                        value={extendedOnDisplay}
-                        placeholder="Tag auswählen..."
-                        className="bg-background pr-10"
-                        readOnly
-                        onClick={() => setExtendedOnPickerOpen(true)}
-                      />
-                      <Popover open={extendedOnPickerOpen} onOpenChange={setExtendedOnPickerOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
+                    <div className="flex gap-2 mt-1">
+                      <div className="relative flex-1">
+                        <Input
+                          id="extended_on"
+                          value={extendedOn && stringToDate(extendedOn) ? formatDateDisplay(stringToDate(extendedOn)) : ''}
+                          placeholder="Tag auswählen..."
+                          className="bg-background pr-10 cursor-pointer"
+                          readOnly
+                          onClick={() => setExtendedOnPickerOpen(true)}
+                        />
+                        <Popover open={extendedOnPickerOpen} onOpenChange={setExtendedOnPickerOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
+                            >
+                              <CalendarIcon className="size-3.5" />
+                              <span className="sr-only">Datum auswählen</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto overflow-hidden p-0"
+                            align="end"
+                            alignOffset={-8}
+                            sideOffset={10}
                           >
-                            <CalendarIcon className="size-3.5" />
-                            <span className="sr-only">Datum auswählen</span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-auto overflow-hidden p-0"
-                          align="end"
-                          alignOffset={-8}
-                          sideOffset={10}
-                        >
-                          <Calendar
-                            mode="single"
-                            selected={stringToDate(extendedOn)}
-                            captionLayout="dropdown"
-                            onSelect={(date) => {
-                              setValue('extended_on', dateToString(date), { shouldDirty: true });
-                              setExtendedOnDisplay(formatDateDisplay(date));
-                              setExtendedOnPickerOpen(false);
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                            <Calendar
+                              mode="single"
+                              selected={stringToDate(extendedOn)}
+                              captionLayout="dropdown"
+                              onSelect={(date) => {
+                                setValue('extended_on', dateToString(date), { shouldDirty: true });
+                                setExtendedOnPickerOpen(false);
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setValue('extended_on', new Date().toISOString().split('T')[0], { shouldDirty: true })}
+                        className="shrink-0"
+                        title="Heute"
+                      >
+                        Heute
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -1001,9 +982,9 @@ export function RentalDetailSheet({
                       <div className="relative flex-1">
                         <Input
                           id="returned_on"
-                          value={returnedOnDisplay}
+                          value={returnedOn && stringToDate(returnedOn) ? formatDateDisplay(stringToDate(returnedOn)) : ''}
                           placeholder="Tag auswählen..."
-                          className="bg-background pr-10"
+                          className="bg-background pr-10 cursor-pointer"
                           readOnly
                           onClick={() => setReturnedOnPickerOpen(true)}
                         />
@@ -1030,7 +1011,6 @@ export function RentalDetailSheet({
                               captionLayout="dropdown"
                               onSelect={(date) => {
                                 setValue('returned_on', dateToString(date), { shouldDirty: true });
-                                setReturnedOnDisplay(formatDateDisplay(date));
                                 setReturnedOnPickerOpen(false);
                               }}
                             />

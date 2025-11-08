@@ -5,7 +5,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { PlusIcon, ImageIcon } from 'lucide-react';
+import { PlusIcon, ImageIcon, CoinsIcon, WrenchIcon, CopyIcon, HistoryIcon } from 'lucide-react';
 import { SearchBar } from '@/components/search/search-bar';
 import { FilterPopover } from '@/components/search/filter-popover';
 import { SortableHeader, type SortDirection } from '@/components/table/sortable-header';
@@ -317,12 +317,14 @@ export default function ItemsPage() {
                       )}
                       {columnVisibility.isColumnVisible('deposit') && (
                         <th className="px-4 py-2 text-left">
-                          <SortableHeader
-                            label="Kaution"
-                            sortDirection={getSortDirection('deposit')}
-                            onSort={() => handleSort('deposit')}
+                          <button
+                            onClick={() => handleSort('deposit')}
                             disabled={isLoading}
-                          />
+                            className="flex items-center gap-1 hover:text-primary transition-colors"
+                            title="Kaution/Tara"
+                          >
+                            <CoinsIcon className="size-4" />
+                          </button>
                         </th>
                       )}
                       {columnVisibility.isColumnVisible('description') && (
@@ -357,22 +359,31 @@ export default function ItemsPage() {
                       )}
                       {columnVisibility.isColumnVisible('parts') && (
                         <th className="px-4 py-2 text-left">
-                          <SortableHeader
-                            label="Teile"
-                            sortDirection={getSortDirection('parts')}
-                            onSort={() => handleSort('parts')}
+                          <button
+                            onClick={() => handleSort('parts')}
                             disabled={isLoading}
-                          />
+                            className="flex items-center gap-1 hover:text-primary transition-colors"
+                            title="Teile"
+                          >
+                            <WrenchIcon className="size-4" />
+                          </button>
                         </th>
                       )}
                       {columnVisibility.isColumnVisible('copies') && (
                         <th className="px-4 py-2 text-left">
-                          <SortableHeader
-                            label="Exemplare"
-                            sortDirection={getSortDirection('copies')}
-                            onSort={() => handleSort('copies')}
+                          <button
+                            onClick={() => handleSort('copies')}
                             disabled={isLoading}
-                          />
+                            className="flex items-center gap-1 hover:text-primary transition-colors"
+                            title="Exemplare"
+                          >
+                            <CopyIcon className="size-4" />
+                          </button>
+                        </th>
+                      )}
+                      {columnVisibility.isColumnVisible('total_rentals') && (
+                        <th className="px-4 py-2 text-left">
+                          <HistoryIcon className="size-4" title="Gesamt Ausleihen" />
                         </th>
                       )}
                       {columnVisibility.isColumnVisible('internal_note') && (
@@ -406,7 +417,12 @@ export default function ItemsPage() {
                       >
                         {columnVisibility.isColumnVisible('iid') && (
                           <td className="px-4 py-3 font-mono text-sm">
-                            {String(item.iid).padStart(4, '0')}
+                            <div className="flex items-center gap-1">
+                              <span className="inline-flex items-center justify-center bg-red-500 text-white font-bold px-1.5 py-0.5 rounded text-xs">
+                                {String(item.iid).padStart(4, '0').substring(0, 2)}
+                              </span>
+                              <span>{String(item.iid).padStart(4, '0').substring(2, 4)}</span>
+                            </div>
                           </td>
                         )}
                         {columnVisibility.isColumnVisible('images') && (
@@ -497,6 +513,12 @@ export default function ItemsPage() {
                         {columnVisibility.isColumnVisible('copies') && (
                           <td className="px-4 py-3 text-sm">
                             {item.copies}
+                          </td>
+                        )}
+                        {columnVisibility.isColumnVisible('total_rentals') && (
+                          <td className="px-4 py-3 text-sm text-center">
+                            {/* TODO: Compute total rentals count */}
+                            —
                           </td>
                         )}
                         {columnVisibility.isColumnVisible('internal_note') && (
