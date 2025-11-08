@@ -140,10 +140,8 @@ export function RentalDetailSheet({
     }
   };
 
-  // Load rental data when rental changes or sheet opens
+  // Load rental data when rental changes
   useEffect(() => {
-    if (!open) return;
-
     if (rental) {
       form.reset({
         customer_id: rental.customer || '',
@@ -173,7 +171,7 @@ export function RentalDetailSheet({
         employee_back: '',
       });
     }
-  }, [rental, open, isNewRental]);
+  }, [rental, isNewRental, form]);
 
   const handleSave = async (data: RentalFormValues) => {
     setIsLoading(true);
