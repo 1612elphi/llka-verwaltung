@@ -19,7 +19,7 @@ import { useFilters } from '@/hooks/use-filters';
 import { useColumnVisibility } from '@/hooks/use-column-visibility';
 import { reservationsFilterConfig } from '@/lib/filters/filter-configs';
 import { reservationsColumnConfig } from '@/lib/tables/column-configs';
-import type { ReservationExpanded, RentalExpanded } from '@/types';
+import type { ReservationExpanded, RentalExpanded, Customer } from '@/types';
 import { formatDateTime } from '@/lib/utils/formatting';
 
 export default function ReservationsPage() {
@@ -245,7 +245,7 @@ export default function ReservationsPage() {
     // If we have a customer IID, fetch the full customer data
     if (reservation.customer_iid) {
       try {
-        const customer = await collections.customers().getFirstListItem(`iid=${reservation.customer_iid}`);
+        const customer = await collections.customers().getFirstListItem<Customer>(`iid=${reservation.customer_iid}`);
         templateRental.customer = customer.id;
         templateRental.expand.customer = customer;
       } catch (err) {
