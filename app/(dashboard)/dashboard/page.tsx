@@ -89,28 +89,28 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Quick Actions */}
-      <div className="flex flex-wrap gap-2">
-        <Button asChild>
+    <div className="container mx-auto p-6 space-y-8">
+      {/* Quick Actions Bar */}
+      <div className="flex flex-wrap gap-3">
+        <Button asChild size="lg" className="shadow-md hover:shadow-lg transition-shadow">
           <Link href="/rentals?action=new">
             <Plus className="mr-2 h-4 w-4" />
             Neue Ausleihe
           </Link>
         </Button>
-        <Button variant="outline" asChild>
+        <Button variant="outline" asChild size="lg" className="shadow-sm hover:shadow-md transition-shadow">
           <Link href="/reservations?action=new">
             <Calendar className="mr-2 h-4 w-4" />
             Neue Reservierung
           </Link>
         </Button>
-        <Button variant="outline" asChild>
+        <Button variant="outline" asChild size="lg" className="shadow-sm hover:shadow-md transition-shadow">
           <Link href="/customers?action=new">
             <Users className="mr-2 h-4 w-4" />
             Neue:r Nutzer:in
           </Link>
         </Button>
-        <Button variant="outline" asChild>
+        <Button variant="outline" asChild size="lg" className="shadow-sm hover:shadow-md transition-shadow">
           <Link href="/items?action=new">
             <Package className="mr-2 h-4 w-4" />
             Neuer Gegenstand
@@ -118,76 +118,84 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Nutzer:innen</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? '...' : stats.totalCustomers}
-            </div>
-            <p className="text-xs text-muted-foreground">Gesamt registriert</p>
-          </CardContent>
-        </Card>
+      {/* 4x4 Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 auto-rows-fr">
+        {/* Top Left: Stats (2x2 grid of 4 stats) */}
+        <div className="lg:col-span-2 lg:row-span-1">
+          <div className="grid grid-cols-2 gap-4 h-full">
+            <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-background">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Nutzer:innen</CardTitle>
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                  {loading ? '...' : stats.totalCustomers}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Gesamt registriert</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gegenstände</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? '...' : stats.totalItems}
-            </div>
-            <p className="text-xs text-muted-foreground">Im Inventar</p>
-          </CardContent>
-        </Card>
+            <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-background">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Gegenstände</CardTitle>
+                <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">
+                  {loading ? '...' : stats.totalItems}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Im Inventar</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aktive Ausleihen</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? '...' : stats.activeRentals}
-            </div>
-            <p className="text-xs text-muted-foreground">Aktuell ausgeliehen</p>
-          </CardContent>
-        </Card>
+            <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-green-50 to-white dark:from-green-950/20 dark:to-background">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Aktive Ausleihen</CardTitle>
+                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-700 dark:text-green-300">
+                  {loading ? '...' : stats.activeRentals}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Aktuell ausgeliehen</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Überfällig</CardTitle>
-            <AlertCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {loading ? '...' : stats.overdueRentals}
-            </div>
-            <p className="text-xs text-muted-foreground">Rückgabe überfällig</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content - 2 Columns */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left Column */}
-        <div className="space-y-6">
-          {/* Notes Section */}
-          <DashboardNotes />
-
-          {/* Active Rentals */}
-          <ActiveRentalsSection onRentalReturned={loadStats} />
+            <Card className="shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-red-50 to-white dark:from-red-950/20 dark:to-background">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Überfällig</CardTitle>
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-red-700 dark:text-red-300">
+                  {loading ? '...' : stats.overdueRentals}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Rückgabe überfällig</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Today's Reservations */}
-          <TodaysReservationsSection onReservationCompleted={loadStats} />
+        {/* Top Right: Notes Section */}
+        <div className="lg:col-span-2 lg:row-span-1">
+          <div className="h-full">
+            <DashboardNotes />
+          </div>
+        </div>
+
+        {/* Bottom Left: Active Rentals */}
+        <div className="lg:col-span-2 lg:row-span-1">
+          <div className="h-full">
+            <ActiveRentalsSection onRentalReturned={loadStats} />
+          </div>
+        </div>
+
+        {/* Bottom Right: Today's Reservations */}
+        <div className="lg:col-span-2 lg:row-span-1">
+          <div className="h-full">
+            <TodaysReservationsSection onReservationCompleted={loadStats} />
+          </div>
         </div>
       </div>
     </div>
