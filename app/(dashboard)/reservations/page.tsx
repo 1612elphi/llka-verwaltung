@@ -379,27 +379,30 @@ export default function ReservationsPage() {
                       >
                         {columnVisibility.isColumnVisible('customer_name') && (
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
+                            {reservation.customer_iid ? (
                               <span className="font-medium">
-                                {!reservation.is_new_customer && reservation.customer_iid && (
-                                  <span className="font-mono text-primary mr-2">
-                                    #{String(reservation.customer_iid).padStart(4, '0')}
-                                  </span>
-                                )}
+                                <span className="font-mono text-primary mr-2">
+                                  #{String(reservation.customer_iid).padStart(4, '0')}
+                                </span>
                                 {reservation.customer_name}
                               </span>
-                              {reservation.is_new_customer && (
-                                <Badge variant="outline">
-                                  Neukunde
-                                </Badge>
-                              )}
-                            </div>
+                            ) : (
+                              <span className="font-medium">{reservation.customer_name}</span>
+                            )}
                           </td>
                         )}
                         {columnVisibility.isColumnVisible('items') && (
                           <td className="px-4 py-3 text-sm">
                             {reservation.expand?.items?.length > 0
-                              ? reservation.expand.items.map((item) => item.name).join(', ')
+                              ? reservation.expand.items.map((item) => (
+                                  <span key={item.id} className="inline-block mr-2">
+                                    <span className="font-mono text-primary">
+                                      #{String(item.iid).padStart(4, '0')}
+                                    </span>
+                                    {' '}
+                                    {item.name}
+                                  </span>
+                                ))
                               : `${reservation.items.length} Gegenstände`}
                           </td>
                         )}
