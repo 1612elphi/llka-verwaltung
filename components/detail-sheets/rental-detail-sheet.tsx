@@ -511,7 +511,7 @@ export function RentalDetailSheet({
                   <Input
                     id="expected_on"
                     type="date"
-                    {...form.register('expected_on')}
+                    {...form.register('expected_on')} 
                     className="mt-1"
                   />
                   {form.formState.errors.expected_on && (
