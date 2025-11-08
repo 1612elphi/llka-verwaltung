@@ -7,7 +7,7 @@ import {
   ITEM_STATUS_LABELS,
   RENTAL_STATUS_LABELS,
 } from '@/lib/constants/statuses';
-import { CATEGORY_LABELS } from '@/lib/constants/categories';
+import { CATEGORY_OPTIONS } from '@/lib/constants/categories';
 
 export interface FilterOption {
   value: string;
@@ -106,10 +106,7 @@ export const itemsFilterConfig: EntityFilterConfig = {
       label: 'Kategorie',
       type: 'category',
       field: 'category',
-      options: Object.values(CATEGORY_LABELS).map((label) => ({
-        value: label,
-        label,
-      })),
+      options: CATEGORY_OPTIONS, // Uses German category names as stored in PocketBase
     },
   ],
 
