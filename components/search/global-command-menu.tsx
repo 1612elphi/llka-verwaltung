@@ -104,7 +104,7 @@ export function GlobalCommandMenu() {
         value={query}
         onValueChange={setQuery}
       />
-      <CommandList>
+      <CommandList shouldFilter={false}>
         <CommandEmpty>
           {isSearching ? 'Suche läuft...' : 'Keine Ergebnisse gefunden.'}
         </CommandEmpty>
