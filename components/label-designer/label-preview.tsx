@@ -71,11 +71,23 @@ export function LabelPreview({ item, labelType, onLabelTypeChange }: LabelPrevie
     return labelElement;
   };
 
+  const waitForFontsToLoad = async () => {
+    // Wait for all fonts to be loaded
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+    // Extra delay to ensure fonts are fully rendered
+    await new Promise(resolve => setTimeout(resolve, 100));
+  };
+
   const handleDownloadPNG = async () => {
     setIsDownloading(true);
     try {
       const labelElement = getLabelElement();
       if (!labelElement) return;
+
+      // Wait for fonts to load before capturing
+      await waitForFontsToLoad();
 
       const dataUrl = await toPng(labelElement, {
         cacheBust: true,
@@ -102,6 +114,9 @@ export function LabelPreview({ item, labelType, onLabelTypeChange }: LabelPrevie
       const labelElement = getLabelElement();
       if (!labelElement) return;
 
+      // Wait for fonts to load before capturing
+      await waitForFontsToLoad();
+
       const dataUrl = await toJpeg(labelElement, {
         cacheBust: true,
         backgroundColor: '#ffffff',
@@ -127,6 +142,9 @@ export function LabelPreview({ item, labelType, onLabelTypeChange }: LabelPrevie
     try {
       const labelElement = getLabelElement();
       if (!labelElement) return;
+
+      // Wait for fonts to load before capturing
+      await waitForFontsToLoad();
 
       const dataUrl = await toPng(labelElement, {
         cacheBust: true,
