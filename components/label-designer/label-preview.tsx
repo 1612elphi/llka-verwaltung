@@ -4,8 +4,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { Printer, Eye } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label as UILabel } from '@/components/ui/label';
@@ -14,6 +14,9 @@ import { type LabelType } from '@/app/(dashboard)/label-designer/page';
 import { DefaultLabel } from './labels/default-label';
 import { CompactLabel } from './labels/compact-label';
 import { CordLabel } from './labels/cord-label';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { toast } from 'sonner';
 
 interface LabelPreviewProps {
   item: Item;
@@ -41,6 +44,8 @@ const labelTypeOptions: { value: LabelType; label: string; description: string }
 
 export function LabelPreview({ item, labelType, onLabelTypeChange }: LabelPreviewProps) {
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const labelRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
     setIsPrinting(true);
@@ -49,6 +54,113 @@ export function LabelPreview({ item, labelType, onLabelTypeChange }: LabelPrevie
       window.print();
       setIsPrinting(false);
     }, 100);
+  };
+
+  const generateCanvas = async () => {
+    if (!labelRef.current) {
+      toast.error('Etikett konnte nicht gefunden werden');
+      return null;
+    }
+
+    try {
+      // Convert mm to pixels at 300 DPI (for high quality)
+      // 100mm = 1181px, 50mm = 591px at 300 DPI
+      const canvas = await html2canvas(labelRef.current, {
+        scale: 3, // Higher scale for better quality
+        backgroundColor: '#ffffff',
+        width: 378, // 100mm at 96 DPI
+        height: 189, // 50mm at 96 DPI
+        useCORS: true,
+        logging: false,
+      });
+
+      return canvas;
+    } catch (error) {
+      console.error('Error generating canvas:', error);
+      toast.error('Fehler beim Erstellen des Etiketts');
+      return null;
+    }
+  };
+
+  const handleDownloadPNG = async () => {
+    setIsDownloading(true);
+    try {
+      const canvas = await generateCanvas();
+      if (!canvas) return;
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Fehler beim Erstellen der PNG-Datei');
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `label-${String(item.iid).padStart(4, '0')}-${labelType}.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success('PNG heruntergeladen');
+      }, 'image/png');
+    } catch (error) {
+      console.error('Error downloading PNG:', error);
+      toast.error('Fehler beim Herunterladen der PNG-Datei');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadJPG = async () => {
+    setIsDownloading(true);
+    try {
+      const canvas = await generateCanvas();
+      if (!canvas) return;
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Fehler beim Erstellen der JPG-Datei');
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `label-${String(item.iid).padStart(4, '0')}-${labelType}.jpg`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success('JPG heruntergeladen');
+      }, 'image/jpeg', 0.95);
+    } catch (error) {
+      console.error('Error downloading JPG:', error);
+      toast.error('Fehler beim Herunterladen der JPG-Datei');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    try {
+      const canvas = await generateCanvas();
+      if (!canvas) return;
+
+      // Create PDF with 100mm x 50mm dimensions
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: [100, 50],
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, 100, 50);
+      pdf.save(`label-${String(item.iid).padStart(4, '0')}-${labelType}.pdf`);
+      toast.success('PDF heruntergeladen');
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Fehler beim Herunterladen der PDF-Datei');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const renderLabel = () => {
@@ -95,17 +207,41 @@ export function LabelPreview({ item, labelType, onLabelTypeChange }: LabelPrevie
       <div className="space-y-3">
         <UILabel>Vorschau</UILabel>
         <div className="border-2 border-dashed border-border p-8 bg-muted/20 flex items-center justify-center overflow-auto">
-          <div className="border-1 border scale-100 origin-center">
+          <div ref={labelRef} className="border-1 border scale-100 origin-center">
             {renderLabel()}
           </div>
         </div>
       </div>
 
-      {/* Print Button */}
-      <div className="flex gap-2">
-        <Button onClick={handlePrint} className="flex-1">
+      {/* Action Buttons */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+        <Button onClick={handlePrint} variant="default">
           <Printer className="mr-2 h-4 w-4" />
           Drucken
+        </Button>
+        <Button
+          onClick={handleDownloadPNG}
+          variant="outline"
+          disabled={isDownloading}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          PNG
+        </Button>
+        <Button
+          onClick={handleDownloadJPG}
+          variant="outline"
+          disabled={isDownloading}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          JPG
+        </Button>
+        <Button
+          onClick={handleDownloadPDF}
+          variant="outline"
+          disabled={isDownloading}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          PDF
         </Button>
       </div>
 
