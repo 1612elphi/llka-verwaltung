@@ -241,7 +241,7 @@ export function GlobalCommandMenu() {
         if (query && flatResults.length > 0) {
           const selected = flatResults[selectedIndex];
           if (selected) {
-            navigateTo(`/${selected.type === 'customer' ? 'customers' : selected.type === 'item' ? 'items' : selected.type === 'reservation' ? 'reservations' : 'rentals'}?id=${selected.id}`);
+            navigateTo(`/${selected.type === 'customer' ? 'customers' : selected.type === 'item' ? 'items' : selected.type === 'reservation' ? 'reservations' : 'rentals'}?view=${selected.id}`);
             setOpen(false);
           }
         } else if (!query && quickNav.length > 0) {
@@ -263,7 +263,7 @@ export function GlobalCommandMenu() {
     if (query && flatResults.length > 0) {
       const selected = flatResults[index];
       if (selected) {
-        navigateTo(`/${selected.type === 'customer' ? 'customers' : selected.type === 'item' ? 'items' : selected.type === 'reservation' ? 'reservations' : 'rentals'}?id=${selected.id}`);
+        navigateTo(`/${selected.type === 'customer' ? 'customers' : selected.type === 'item' ? 'items' : selected.type === 'reservation' ? 'reservations' : 'rentals'}?view=${selected.id}`);
         setOpen(false);
       }
     } else if (!query && quickNav.length > 0) {
