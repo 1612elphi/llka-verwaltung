@@ -89,7 +89,7 @@ The PocketBase collections will be automatically created when you use the app, o
 To build and deploy as an SPA under a subpath, run:
 
 ```bash
-BASE_PATH=/backend npm run build
+BASE_PATH=/backend NEXT_PUBLIC_POCKETBASE_URL=https://leihlokal-ka.de npm run build
 ```
 
 Then, serve `out/` as static files.
