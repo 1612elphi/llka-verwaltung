@@ -62,9 +62,9 @@ export const RENTAL_STATUS_LABELS: Record<RentalStatus, string> = {
 export const RENTAL_STATUS_COLORS: Record<RentalStatus, string> = {
   [RentalStatus.Active]: 'transparent',
   [RentalStatus.Returned]: 'transparent',
-  [RentalStatus.Overdue]: 'hsl(0 100% 97%)', // light red
-  [RentalStatus.DueToday]: 'hsl(210 100% 97%)', // light blue
-  [RentalStatus.ReturnedToday]: 'hsl(120 100% 97%)', // light green
+  [RentalStatus.Overdue]: 'hsl(0 80% 92%)', // more visible light red
+  [RentalStatus.DueToday]: 'hsl(210 70% 92%)', // more visible light blue
+  [RentalStatus.ReturnedToday]: 'hsl(120 60% 92%)', // more visible light green
 };
 
 /**

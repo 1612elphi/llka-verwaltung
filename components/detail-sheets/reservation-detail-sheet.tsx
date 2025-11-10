@@ -128,10 +128,10 @@ export function ReservationDetailSheet({
       });
       setCustomers(customersResult.items);
 
-      // Load items
+      // Load items (only show available or reserved items)
       const itemsResult = await collections.items().getList<Item>(1, 500, {
         sort: 'name',
-        filter: 'status!="deleted"',
+        filter: 'status="instock" || status="reserved"',
       });
       setItems(itemsResult.items);
     } catch (err) {
@@ -186,6 +186,21 @@ export function ReservationDetailSheet({
   const handleSave = async (data: ReservationFormValues) => {
     setIsLoading(true);
     try {
+      // Validate that all selected items are available (instock or reserved)
+      const itemsToValidate = items.filter(item => data.item_ids.includes(item.id));
+      const unavailableItems = itemsToValidate.filter(item =>
+        item.status !== 'instock' && item.status !== 'reserved'
+      );
+
+      if (unavailableItems.length > 0) {
+        const itemNames = unavailableItems.map(item =>
+          `${item.name} (#${String(item.iid).padStart(4, '0')})`
+        ).join(', ');
+        toast.error(`Folgende Artikel sind nicht verfügbar: ${itemNames}`);
+        setIsLoading(false);
+        return;
+      }
+
       // Convert datetime-local format (YYYY-MM-DDTHH:MM) to ISO 8601 with seconds
       const pickupDate = new Date(data.pickup);
       const pickupISO = pickupDate.toISOString();
