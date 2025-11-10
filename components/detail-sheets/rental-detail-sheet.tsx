@@ -328,8 +328,8 @@ export function RentalDetailSheet({
         filters.push(`brand~'${itemSearch}'`);
         filters.push(`model~'${itemSearch}'`);
 
-        // Don't show deleted items
-        const filter = `(${filters.join(' || ')}) && status!='deleted'`;
+        // Only show items that are available (instock) or reserved
+        const filter = `(${filters.join(' || ')}) && (status='instock' || status='reserved')`;
 
         const result = await collections.items().getList<Item>(1, 20, {
           filter,
@@ -476,13 +476,29 @@ export function RentalDetailSheet({
       // Get customer by iid to get its PocketBase ID
       const customer = await collections.customers().getFirstListItem<Customer>(`iid=${data.customer_iid}`);
 
-      // Get all items by iid to get their PocketBase IDs
-      const itemIds = await Promise.all(
+      // Get all items by iid to get their PocketBase IDs and validate their status
+      const items = await Promise.all(
         data.item_iids.map(async (iid) => {
           const item = await collections.items().getFirstListItem<Item>(`iid=${iid}`);
-          return item.id;
+          return item;
         })
       );
+
+      // Validate that all items are available (instock or reserved)
+      const unavailableItems = items.filter(item =>
+        item.status !== 'instock' && item.status !== 'reserved'
+      );
+
+      if (unavailableItems.length > 0) {
+        const itemNames = unavailableItems.map(item =>
+          `${item.name} (#${String(item.iid).padStart(4, '0')})`
+        ).join(', ');
+        toast.error(`Folgende Gegenstände sind nicht verfügbar: ${itemNames}`);
+        setIsLoading(false);
+        return;
+      }
+
+      const itemIds = items.map(item => item.id);
 
       const formData: Partial<Rental> = {
         customer: customer.id,
@@ -748,7 +764,17 @@ export function RentalDetailSheet({
                           </div>
                           <div className="space-y-1 text-sm text-muted-foreground">
                             {selectedCustomer.email && <p>{selectedCustomer.email}</p>}
-                            {selectedCustomer.phone && <p>{selectedCustomer.phone}</p>}
+                            {selectedCustomer.phone && (
+                              <p>
+                                <a
+                                  href={`tel:${selectedCustomer.phone.replace(/\s/g, '')}`}
+                                  className="hover:underline font-mono text-base text-foreground"
+                                  title="Zum Anrufen klicken"
+                                >
+                                  {selectedCustomer.phone}
+                                </a>
+                              </p>
+                            )}
                             {selectedCustomer.street && (
                               <p>{selectedCustomer.street}, {selectedCustomer.postal_code} {selectedCustomer.city}</p>
                             )}

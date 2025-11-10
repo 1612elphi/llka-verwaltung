@@ -6,6 +6,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { PlusIcon, CheckCircle2Icon } from 'lucide-react';
 import { SearchBar } from '@/components/search/search-bar';
 import { FilterPopover } from '@/components/search/filter-popover';
@@ -245,6 +246,14 @@ export default function ReservationsPage() {
 
   // Handle converting reservation to rental
   const handleConvertToRental = async (reservation: ReservationExpanded) => {
+    // Mark reservation as complete when converting to rental
+    try {
+      await collections.reservations().update(reservation.id, { done: true });
+    } catch (err) {
+      console.error('Error marking reservation as complete:', err);
+      toast.error('Fehler beim Aktualisieren der Reservierung');
+    }
+
     // Close reservation sheet
     setIsSheetOpen(false);
 

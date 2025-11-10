@@ -31,7 +31,36 @@ export function buildPocketBaseFilter(
   filters.forEach((filter) => {
     switch (filter.type) {
       case 'status':
-        filterParts.push(`${filter.field} = '${filter.value}'`);
+        // Handle computed rental status specially
+        if (filter.field === '__rental_status__') {
+          const today = new Date().toISOString().split('T')[0];
+          const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+          switch (filter.value) {
+            case 'active':
+              // Not returned and expected date is in the future (not today or past)
+              filterParts.push(`(returned_on = '' && expected_on >= '${tomorrow}')`);
+              break;
+            case 'overdue':
+              // Not returned and expected date is in the past
+              filterParts.push(`(returned_on = '' && expected_on < '${today}')`);
+              break;
+            case 'due_today':
+              // Not returned and expected date is today
+              filterParts.push(`(returned_on = '' && expected_on >= '${today}' && expected_on < '${tomorrow}')`);
+              break;
+            case 'returned':
+              // Returned but not today
+              filterParts.push(`(returned_on != '' && (returned_on < '${today}' || returned_on >= '${tomorrow}'))`);
+              break;
+            case 'returned_today':
+              // Returned today
+              filterParts.push(`(returned_on >= '${today}' && returned_on < '${tomorrow}')`);
+              break;
+          }
+        } else {
+          filterParts.push(`${filter.field} = '${filter.value}'`);
+        }
         break;
 
       case 'category':

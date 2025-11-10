@@ -91,8 +91,21 @@ export function useFilters({ entity, config, persist = true }: UseFiltersOptions
    */
   const buildFilter = useCallback(
     (searchQuery: string = ''): string => {
+      // For rentals, convert status filters to date-based filters
+      let filtersToUse = activeFilters;
+      if (entity === 'rentals') {
+        filtersToUse = activeFilters.map(filter => {
+          if (filter.field === '__computed_status__') {
+            // Convert status filter to equivalent date filters
+            // This is a special filter that needs to be handled differently
+            return { ...filter, field: '__rental_status__' };
+          }
+          return filter;
+        });
+      }
+
       // Build base filter from active filters
-      let filterString = buildPocketBaseFilter(activeFilters, searchQuery);
+      let filterString = buildPocketBaseFilter(filtersToUse, searchQuery);
 
       // Replace __SEARCH__ placeholder with actual search fields
       if (searchQuery && searchQuery.trim()) {
