@@ -19,11 +19,13 @@ import {
 } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { LogIn } from 'lucide-react';
+import { getServerUrl } from '@/lib/pocketbase/client';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated } = useAuth();
-  const [serverUrl, setServerUrl] = useState('http://localhost:8090');
+  const defaultPlaceholderUrl = getServerUrl();
+  const [serverUrl, setServerUrl] = useState(defaultPlaceholderUrl);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +96,7 @@ export default function LoginPage() {
               <Input
                 id="serverUrl"
                 type="url"
-                placeholder="http://localhost:8090"
+                placeholder={serverUrl}
                 value={serverUrl}
                 onChange={(e) => setServerUrl(e.target.value)}
                 disabled={isLoading}
@@ -102,7 +104,7 @@ export default function LoginPage() {
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                z.B. http://localhost:8090 oder https://api.leihlokal.de
+                z.B. http://localhost:8090, https://stage.leihlokal.de oder https://leihlokal.de
               </p>
             </div>
 
