@@ -520,22 +520,38 @@ export function ItemDetailSheet({
                   </div>
 
                   <div>
-                    <Label htmlFor="category">Kategorien *</Label>
-                    <select
-                      id="category"
-                      {...form.register('category')}
-                      multiple
-                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[100px]"
-                    >
-                      {CATEGORY_OPTIONS.map(({ value, label }) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Halten Sie Strg/Cmd für Mehrfachauswahl
-                    </p>
+                    <Label>Kategorien *</Label>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {CATEGORY_OPTIONS.map(({ value, label }) => {
+                        const isChecked = form.watch('category').includes(value as any);
+                        return (
+                          <label
+                            key={value}
+                            className="flex items-center gap-2 cursor-pointer p-2 border rounded hover:bg-muted/50 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const currentCategories = form.getValues('category');
+                                if (e.target.checked) {
+                                  form.setValue('category', [...currentCategories, value as any], { shouldDirty: true });
+                                } else {
+                                  form.setValue('category', currentCategories.filter(c => c !== value), { shouldDirty: true });
+                                }
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <span className="text-sm">{label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {form.formState.errors.category && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.category.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>

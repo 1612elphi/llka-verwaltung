@@ -420,11 +420,8 @@ export default function RentalsPage() {
                             <td className="px-4 py-3">
                               {rental.expand?.customer ? (
                                 <span className="font-medium">
-                                  <span className="font-mono mr-2">
-                                    <span className="inline-flex items-center justify-center bg-red-500 text-white font-bold px-1.5 py-0.5 rounded text-xs">
-                                      {String(rental.expand.customer.iid).padStart(4, '0').substring(0, 2)}
-                                    </span>
-                                    <span>{String(rental.expand.customer.iid).padStart(4, '0').substring(2, 4)}</span>
+                                  <span className="font-mono text-primary font-semibold mr-2">
+                                    {String(rental.expand.customer.iid).padStart(4, '0')}
                                   </span>
                                   {rental.expand.customer.firstname}{' '}
                                   {rental.expand.customer.lastname}
@@ -443,7 +440,7 @@ export default function RentalsPage() {
                                         <span className="inline-flex items-center justify-center bg-red-500 text-white font-bold px-1.5 py-0.5 rounded text-xs">
                                           {String(item.iid).padStart(4, '0').substring(0, 2)}
                                         </span>
-                                        <span>{String(item.iid).padStart(4, '0').substring(2, 4)}</span>
+                                        <span className="ml-0.5">{String(item.iid).padStart(4, '0').substring(2, 4)}</span>
                                       </span>
                                       {item.name}
                                     </span>

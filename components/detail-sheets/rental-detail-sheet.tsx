@@ -771,7 +771,7 @@ export function RentalDetailSheet({
                                   className="hover:underline font-mono text-base text-foreground"
                                   title="Zum Anrufen klicken"
                                 >
-                                  {selectedCustomer.phone}
+                                  {selectedCustomer.phone.replace(/\s/g, '').match(/.{1,4}/g)?.join(' ') || selectedCustomer.phone}
                                 </a>
                               </p>
                             )}
