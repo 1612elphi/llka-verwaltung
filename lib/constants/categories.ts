@@ -14,7 +14,7 @@ export const CATEGORY_LABELS: Record<ItemCategory, string> = {
   [ItemCategory.Kids]: 'Kinder',
   [ItemCategory.Leisure]: 'Freizeit',
   [ItemCategory.DIY]: 'Heimwerken',
-  [ItemCategory.Other]: 'Sonstiges',
+  [ItemCategory.Other]: 'Sonstige',
 };
 
 /**
@@ -27,7 +27,7 @@ export const GERMAN_CATEGORIES = {
   KIDS: 'Kinder',
   LEISURE: 'Freizeit',
   DIY: 'Heimwerken',
-  OTHER: 'Sonstiges',
+  OTHER: 'Sonstige',
 } as const;
 
 /**

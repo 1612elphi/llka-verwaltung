@@ -45,7 +45,7 @@ const itemSchema = z.object({
   brand: z.string().optional(),
   model: z.string().optional(),
   description: z.string().optional(),
-  category: z.array(z.enum(['Küche', 'Haushalt', 'Garten', 'Kinder', 'Freizeit', 'Heimwerken', 'Sonstiges'])),
+  category: z.array(z.enum(['Küche', 'Haushalt', 'Garten', 'Kinder', 'Freizeit', 'Heimwerken', 'Sonstige'])),
   deposit: z.number().min(0, 'Kaution muss positiv sein'),
   synonyms: z.string().optional(), // Comma-separated
   packaging: z.string().optional(),
