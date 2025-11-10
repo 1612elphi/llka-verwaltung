@@ -607,6 +607,10 @@ export function ItemDetailSheet({
                             src={pb.files.getURL(item!, imageName, { thumb: '200x200' })}
                             alt={item?.name}
                             className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                            width={200}
+                            height={200}
                           />
                         </div>
                         {isEditMode && (
@@ -1005,6 +1009,10 @@ export function ItemDetailSheet({
                           src={pb.files.getURL(item!, imageName, { thumb: '200x200' })}
                           alt={item?.name}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                          width={200}
+                          height={200}
                         />
                       </div>
                     ))}

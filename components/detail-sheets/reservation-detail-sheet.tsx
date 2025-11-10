@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { SaveIcon, XIcon, CheckIcon, ChevronsUpDownIcon, PlusIcon, Trash2Icon, ArrowRightIcon } from 'lucide-react';
+import { SaveIcon, XIcon, CheckIcon, ChevronsUpDownIcon, PlusIcon, Trash2Icon, ArrowRightIcon, UserPlusIcon } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -48,6 +48,7 @@ import { collections } from '@/lib/pocketbase/client';
 import { formatDate, formatCurrency } from '@/lib/utils/formatting';
 import { cn } from '@/lib/utils';
 import type { Reservation, ReservationExpanded, Customer, Item } from '@/types';
+import { CustomerDetailSheet } from './customer-detail-sheet';
 
 // Validation schema
 const reservationSchema = z.object({
@@ -86,6 +87,8 @@ export function ReservationDetailSheet({
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [itemSearchOpen, setItemSearchOpen] = useState(false);
+  const [showCustomerSheet, setShowCustomerSheet] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState<Partial<Customer> | null>(null);
 
   const isNewReservation = !reservation?.id;
 
@@ -248,6 +251,36 @@ export function ReservationDetailSheet({
     setValue('item_ids', selectedItemIds.filter((id) => id !== itemId), { shouldDirty: true });
   };
 
+  const handleCreateCustomer = () => {
+    const formValues = form.getValues();
+
+    // Parse customer name into firstname and lastname
+    const nameParts = formValues.customer_name.trim().split(' ');
+    const firstname = nameParts[0] || '';
+    const lastname = nameParts.slice(1).join(' ') || '';
+
+    // Prepare customer data from reservation form
+    setNewCustomerData({
+      firstname,
+      lastname,
+      email: formValues.customer_email || undefined,
+      phone: formValues.customer_phone || undefined,
+    });
+
+    setShowCustomerSheet(true);
+  };
+
+  const handleCustomerSaved = (savedCustomer: Customer) => {
+    // Update the customer list
+    setCustomers([...customers, savedCustomer]);
+
+    // Auto-select the new customer and turn off new customer mode
+    setValue('customer_iid', savedCustomer.iid, { shouldDirty: true });
+    setValue('is_new_customer', false, { shouldDirty: true });
+
+    toast.success(`Kunde ${savedCustomer.firstname} ${savedCustomer.lastname} wurde erstellt`);
+  };
+
   return (
     <>
       <Sheet open={open} onOpenChange={(open) => {
@@ -282,22 +315,36 @@ export function ReservationDetailSheet({
 
           <div className="flex-1 overflow-y-auto">
             <form onSubmit={form.handleSubmit(handleSave)} className="space-y-8 px-6">
-            {/* Customer Information */}
+            {/* New Customer Toggle */}
+            <div className="pt-4">
+              <Button
+                type="button"
+                variant={isNewCustomer ? "default" : "outline"}
+                onClick={() => setValue('is_new_customer', !isNewCustomer, { shouldDirty: true })}
+                className="w-full h-auto py-3"
+              >
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "h-5 w-5 rounded border-2 flex items-center justify-center transition-colors",
+                    isNewCustomer ? "bg-primary-foreground border-primary-foreground" : "border-current"
+                  )}>
+                    {isNewCustomer && <CheckIcon className="h-3 w-3 text-primary" />}
+                  </div>
+                  <span className="text-base font-medium">
+                    Neuer Kunde (noch nicht registriert)
+                  </span>
+                </div>
+              </Button>
+            </div>
+
+            {/* Customer and Items Selection */}
             <section className="space-y-4">
               <div className="border-b pb-2 mb-4">
-                <h3 className="font-semibold text-lg">Kundeninformationen</h3>
+                <h3 className="font-semibold text-lg">Kunde & Artikel</h3>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  id="is_new_customer"
-                  type="checkbox"
-                  {...form.register('is_new_customer')}
-                />
-                <Label htmlFor="is_new_customer" className="cursor-pointer">
-                  Neuer Kunde (noch nicht registriert)
-                </Label>
-              </div>
-
+              <div className="grid grid-cols-2 gap-4">
+                {/* Customer Selection */}
+                <div className="space-y-4">
               {!isNewCustomer && (
                 <div>
                   <Label>Bestehenden Kunden auswählen</Label>
@@ -423,13 +470,28 @@ export function ReservationDetailSheet({
                   )}
                 </div>
               </div>
-            </section>
 
-            {/* Items Selection */}
-            <section className="space-y-4">
-              <div className="border-b pb-2 mb-4">
-                <h3 className="font-semibold text-lg">Artikel</h3>
-              </div>
+              {isNewCustomer && (
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleCreateCustomer}
+                    className="w-full"
+                    disabled={!form.watch('customer_name')}
+                  >
+                    <UserPlusIcon className="size-4 mr-2" />
+                    Als neuen Kunden anlegen
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Kundendaten in die Datenbank übernehmen
+                  </p>
+                </div>
+              )}
+                </div>
+
+                {/* Items Selection */}
+                <div className="space-y-4">
               <div>
                 <Label>Artikel hinzufügen *</Label>
                 <Popover open={itemSearchOpen} onOpenChange={setItemSearchOpen}>
@@ -492,37 +554,38 @@ export function ReservationDetailSheet({
               {selectedItems.length > 0 && (
                 <div className="space-y-2">
                   {selectedItems.map((item) => (
-                    <div key={item.id} className="border rounded-lg p-4 bg-muted/50">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-baseline gap-2 mb-1">
-                            <span className="font-mono text-primary font-semibold text-lg">
-                              #{String(item.iid).padStart(4, '0')}
-                            </span>
-                            <span className="font-semibold text-lg">{item.name}</span>
-                          </div>
-                          <div className="space-y-1 text-sm text-muted-foreground">
-                            {item.brand && <p>Marke: {item.brand}</p>}
-                            {item.model && <p>Modell: {item.model}</p>}
-                            <p className="font-medium text-foreground">
-                              Kaution: {formatCurrency(item.deposit)}
-                            </p>
-                          </div>
+                    <div key={item.id} className="border rounded-lg p-3 bg-muted/50 flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="font-mono text-primary font-semibold">
+                            #{String(item.iid).padStart(4, '0')}
+                          </span>
+                          <span className="font-semibold truncate">{item.name}</span>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="shrink-0"
-                        >
-                          <Trash2Icon className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-3 text-xs text-muted-foreground">
+                          {item.brand && <span>Marke: {item.brand}</span>}
+                          {item.model && <span>Modell: {item.model}</span>}
+                          <span className="font-medium text-foreground">
+                            {formatCurrency(item.deposit)}
+                          </span>
+                        </div>
                       </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveItem(item.id)}
+                        className="shrink-0 h-8 w-8 p-0"
+                        title="Entfernen"
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
               )}
+                </div>
+              </div>
             </section>
 
             {/* Reservation Details */}
@@ -627,6 +690,14 @@ export function ReservationDetailSheet({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Customer Detail Sheet for creating new customer */}
+      <CustomerDetailSheet
+        customer={newCustomerData as Customer | null}
+        open={showCustomerSheet}
+        onOpenChange={setShowCustomerSheet}
+        onSave={handleCustomerSaved}
+      />
     </>
   );
 }

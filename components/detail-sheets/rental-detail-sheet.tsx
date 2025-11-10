@@ -861,9 +861,18 @@ export function RentalDetailSheet({
                           </Button>
                         </div>
                       ))}
-                      <div className="text-sm font-medium pt-2 border-t">
-                        Gesamt Kaution: {formatCurrency(selectedItems.reduce((sum, i) => sum + (i.deposit || 0), 0))}
-                      </div>
+                      {selectedItems.length > 1 && (
+                        <div className="pt-3 border-t-2 border-primary">
+                          <div className="flex items-center justify-between bg-primary/10 rounded-lg p-4">
+                            <span className="text-lg font-semibold text-primary">
+                              Gesamt Pfand:
+                            </span>
+                            <span className="text-3xl font-bold text-primary">
+                              {formatCurrency(selectedItems.reduce((sum, i) => sum + (i.deposit || 0), 0))}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

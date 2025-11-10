@@ -33,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { collections } from '@/lib/pocketbase/client';
 import { formatDate, formatCurrency, calculateRentalStatus } from '@/lib/utils/formatting';
+import { getRentalStatusLabel } from '@/lib/constants/statuses';
 import type { Customer, CustomerFormData, Rental, RentalExpanded, Reservation, ReservationExpanded, HighlightColor } from '@/types';
 
 // Validation schema
@@ -104,7 +105,8 @@ export function CustomerDetailSheet({
 
   // Load customer data when customer changes
   useEffect(() => {
-    if (customer) {
+    if (customer && customer.id) {
+      // Existing customer - load all data
       form.reset({
         iid: customer.iid,
         firstname: customer.firstname,
@@ -122,6 +124,37 @@ export function CustomerDetailSheet({
         highlight_color: (customer.highlight_color || '') as '' | 'green' | 'blue' | 'yellow' | 'red',
       });
       setIsEditMode(false);
+    } else if (customer && !customer.id) {
+      // Partial customer data (e.g., from reservation) - pre-fill what we have
+      const fetchNextIid = async () => {
+        try {
+          const result = await collections.customers().getList(1, 1, {
+            sort: '-iid',
+          });
+          const nextIid = result.items.length > 0 ? result.items[0].iid + 1 : 1;
+
+          form.reset({
+            iid: nextIid,
+            firstname: customer.firstname || '',
+            lastname: customer.lastname || '',
+            email: customer.email || '',
+            phone: customer.phone || '',
+            street: customer.street || '',
+            postal_code: customer.postal_code || '',
+            city: customer.city || '',
+            registered_on: new Date().toISOString().split('T')[0],
+            renewed_on: '',
+            heard: '',
+            newsletter: false,
+            remark: '',
+            highlight_color: '',
+          });
+          setIsEditMode(true);
+        } catch (err) {
+          console.error('Error fetching next IID:', err);
+        }
+      };
+      fetchNextIid();
     } else if (isNewCustomer) {
       // Fetch next available IID for new customers
       const fetchNextIid = async () => {
@@ -703,20 +736,41 @@ export function CustomerDetailSheet({
                         </tr>
                       </thead>
                       <tbody className="bg-background">
-                        {(showAllReservations ? reservations : reservations.slice(0, 5)).map((reservation) => (
-                          <tr key={reservation.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                            <td className="px-3 py-2 font-medium">{formatDate(reservation.pickup)}</td>
-                            <td className="px-3 py-2 text-muted-foreground">
-                              {reservation.expand?.items?.length || 0} Artikel
-                            </td>
-                            <td className="px-3 py-2">
-                              <Badge variant={reservation.done ? 'secondary' : 'default'}>
-                                {reservation.done ? 'Erledigt' : 'Offen'}
-                              </Badge>
-                            </td>
-                            <td className="px-3 py-2 text-muted-foreground">{reservation.comments || '—'}</td>
-                          </tr>
-                        ))}
+                        {(showAllReservations ? reservations : reservations.slice(0, 5)).map((reservation) => {
+                          const items = reservation.expand?.items || [];
+                          const firstItem = items[0];
+                          const additionalCount = items.length - 1;
+
+                          return (
+                            <tr key={reservation.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                              <td className="px-3 py-2 font-medium">{formatDate(reservation.pickup)}</td>
+                              <td className="px-3 py-2 text-muted-foreground">
+                                {firstItem ? (
+                                  <>
+                                    <span className="font-mono text-xs">
+                                      {String(firstItem.iid).padStart(4, '0')}
+                                    </span>
+                                    {' '}
+                                    {firstItem.name}
+                                    {additionalCount > 0 && (
+                                      <span className="text-xs ml-1">
+                                        +{additionalCount}
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  '—'
+                                )}
+                              </td>
+                              <td className="px-3 py-2">
+                                <Badge variant={reservation.done ? 'secondary' : 'default'}>
+                                  {reservation.done ? 'Erledigt' : 'Offen'}
+                                </Badge>
+                              </td>
+                              <td className="px-3 py-2 text-muted-foreground">{reservation.comments || '—'}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -779,7 +833,7 @@ export function CustomerDetailSheet({
                               </td>
                               <td className="px-3 py-2">
                                 <Badge variant={status === 'overdue' ? 'destructive' : 'secondary'}>
-                                  {status}
+                                  {getRentalStatusLabel(status)}
                                 </Badge>
                               </td>
                             </tr>

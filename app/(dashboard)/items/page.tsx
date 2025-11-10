@@ -462,6 +462,10 @@ export default function ItemsPage() {
                                       src={pb.files.getURL(item, item.images[0], { thumb: '40x40' })}
                                       alt={item.name}
                                       className="w-full h-full object-cover"
+                                      loading="lazy"
+                                      decoding="async"
+                                      width={40}
+                                      height={40}
                                     />
                                   </div>
                                 </HoverCardTrigger>
@@ -470,6 +474,10 @@ export default function ItemsPage() {
                                     src={pb.files.getURL(item, item.images[0], { thumb: '300x300' })}
                                     alt={item.name}
                                     className="w-full h-auto rounded"
+                                    loading="lazy"
+                                    decoding="async"
+                                    width={300}
+                                    height={300}
                                   />
                                   {item.images.length > 1 && (
                                     <p className="text-xs text-muted-foreground mt-2 text-center">

@@ -50,9 +50,17 @@ export function SearchBar({
 }: SearchBarProps) {
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const wasFocusedRef = useRef(false);
 
   // Show filter chips when there are active filters
   const showFilterChips = filters.length > 0;
+
+  // Restore focus after re-renders if input was previously focused
+  useEffect(() => {
+    if (wasFocusedRef.current && inputRef.current && document.activeElement !== inputRef.current) {
+      inputRef.current.focus();
+    }
+  });
 
   return (
     <div className="relative w-full">
@@ -94,8 +102,14 @@ export function SearchBar({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={() => {
+            setIsFocused(true);
+            wasFocusedRef.current = true;
+          }}
+          onBlur={() => {
+            setIsFocused(false);
+            wasFocusedRef.current = false;
+          }}
           placeholder={placeholder}
           disabled={disabled}
           className={`
