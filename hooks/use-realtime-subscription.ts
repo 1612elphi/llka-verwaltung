@@ -116,19 +116,21 @@ export function useRealtimeSubscription<T extends BaseRecord>(
 
     const unsubscribe = pb.collection(collection).subscribe(
       topic || '*',
-      async (event: RealtimeEvent<T>) => {
+      async (event) => {
         // Log event in development only
-        logRealtimeEvent(event, collection);
+        logRealtimeEvent(event as RealtimeEvent<T>, collection);
 
-        // Route to appropriate callback
-        if (isCreateEvent(event) && onCreatedRef.current) {
-          await onCreatedRef.current(event.record);
-        } else if (isUpdateEvent(event) && onUpdatedRef.current) {
-          await onUpdatedRef.current(event.record);
-        } else if (isDeleteEvent(event) && onDeletedRef.current) {
-          await onDeletedRef.current(event.record);
+        // Route to appropriate callback based on action
+        const action = event.action;
+
+        if (action === 'create' && onCreatedRef.current) {
+          await onCreatedRef.current(event.record as T);
+        } else if (action === 'update' && onUpdatedRef.current) {
+          await onUpdatedRef.current(event.record as T);
+        } else if (action === 'delete' && onDeletedRef.current) {
+          await onDeletedRef.current(event.record as T);
         } else if (process.env.NODE_ENV === 'development') {
-          console.warn(`[Realtime] No handler for ${event.action} event on ${collection}`);
+          console.warn(`[Realtime] No handler for ${action} event on ${collection}`);
         }
       },
       {
@@ -205,15 +207,17 @@ export function useRealtimeRecord<T extends BaseRecord>(
     // Subscribe to specific record
     const unsubscribe = pb.collection(collection).subscribe(
       recordId,
-      async (event: RealtimeEvent<T>) => {
-        logRealtimeEvent(event, collection);
+      async (event) => {
+        logRealtimeEvent(event as RealtimeEvent<T>, collection);
 
-        if (isCreateEvent(event) && onCreatedRef.current) {
-          await onCreatedRef.current(event.record);
-        } else if (isUpdateEvent(event) && onUpdatedRef.current) {
-          await onUpdatedRef.current(event.record);
-        } else if (isDeleteEvent(event) && onDeletedRef.current) {
-          await onDeletedRef.current(event.record);
+        const action = event.action;
+
+        if (action === 'create' && onCreatedRef.current) {
+          await onCreatedRef.current(event.record as T);
+        } else if (action === 'update' && onUpdatedRef.current) {
+          await onUpdatedRef.current(event.record as T);
+        } else if (action === 'delete' && onDeletedRef.current) {
+          await onDeletedRef.current(event.record as T);
         }
       }
     );
