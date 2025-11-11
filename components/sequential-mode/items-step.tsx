@@ -235,6 +235,7 @@ export function ItemsStep() {
         {selectedItems.length > 0 && (
           <div className="mt-6 pt-6 border-t">
             <Button
+              type="button"
               onClick={goNext}
               size="lg"
               className="w-full h-14 text-xl"

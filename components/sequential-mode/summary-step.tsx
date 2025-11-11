@@ -8,19 +8,12 @@
 import { useEffect } from 'react';
 import { useSequentialMode } from '@/hooks/use-sequential-mode';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { Button } from '@/components/ui/button';
+import { CheckCircle2 } from 'lucide-react';
 
 export function SummaryStep() {
   const { selectedCustomer, selectedItems, expectedDate, totalDeposit, setOpen, reset } =
     useSequentialMode();
-
-  // Auto-dismiss after 5 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      handleDismiss();
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   // Handle Enter key to dismiss
   useEffect(() => {
@@ -93,9 +86,21 @@ export function SummaryStep() {
         </div>
       </div>
 
-      {/* Auto-dismiss hint */}
-      <div className="mt-12 text-muted-foreground text-sm">
-        Schließt automatisch in wenigen Sekunden oder drücken Sie Enter
+      {/* Dismiss button */}
+      <Button
+        type="button"
+        onClick={handleDismiss}
+        size="lg"
+        className="mt-12 h-16 px-8 text-xl"
+        autoFocus
+      >
+        <CheckCircle2 className="mr-2 h-6 w-6" />
+        Fertig
+      </Button>
+
+      {/* Keyboard hint */}
+      <div className="mt-4 text-muted-foreground text-sm">
+        Drücken Sie Enter oder klicken Sie auf Fertig
       </div>
     </div>
   );

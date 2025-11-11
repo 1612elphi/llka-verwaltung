@@ -147,6 +147,7 @@ export function FinalizeStep({ onSuccess }: { onSuccess: () => void }) {
             {/* Quick action buttons */}
             <div className="grid grid-cols-3 gap-4">
               <Button
+                type="button"
                 onClick={() => setWeeksFromNow(1)}
                 size="lg"
                 variant={
@@ -159,6 +160,7 @@ export function FinalizeStep({ onSuccess }: { onSuccess: () => void }) {
                 +1 Woche
               </Button>
               <Button
+                type="button"
                 onClick={() => setWeeksFromNow(2)}
                 size="lg"
                 variant={
@@ -171,6 +173,7 @@ export function FinalizeStep({ onSuccess }: { onSuccess: () => void }) {
                 +2 Wochen
               </Button>
               <Button
+                type="button"
                 onClick={() => setWeeksFromNow(3)}
                 size="lg"
                 variant={
