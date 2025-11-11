@@ -11,7 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { SaveIcon, XIcon, CheckIcon, ChevronsUpDownIcon, CalendarIcon, TrashIcon } from 'lucide-react';
+import { SaveIcon, XIcon, CheckIcon, ChevronsUpDownIcon, CalendarIcon, TrashIcon, MinusIcon, PlusIcon } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -51,6 +51,8 @@ import { formatDate, formatCurrency, calculateRentalStatus, dateToLocalString, l
 import { cn } from '@/lib/utils';
 import { useIdentity } from '@/hooks/use-identity';
 import type { Rental, RentalExpanded, Customer, Item } from '@/types';
+import { parseInstanceData, serializeInstanceData, extractUserNotes, getCopyCount, setCopyCount, removeCopyCount, type InstanceData } from '@/lib/utils/instance-data';
+import { getMultipleItemAvailability, type ItemAvailability } from '@/lib/utils/item-availability';
 
 // Validation schema
 const rentalSchema = z.object({
@@ -136,6 +138,10 @@ export function RentalDetailSheet({
   const [itemSearchOpen, setItemSearchOpen] = useState(false);
   const [isSearchingItems, setIsSearchingItems] = useState(false);
 
+  // Instance data state (copy counts for each item)
+  const [instanceData, setInstanceData] = useState<InstanceData>({});
+  const [itemAvailability, setItemAvailability] = useState<Map<string, ItemAvailability>>(new Map());
+
   // Date picker state
   const [rentedOnPickerOpen, setRentedOnPickerOpen] = useState(false);
   const [expectedOnPickerOpen, setExpectedOnPickerOpen] = useState(false);
@@ -179,6 +185,10 @@ export function RentalDetailSheet({
       if (rental.expand?.items && rental.expand.items.length > 0) {
         setSelectedItems(rental.expand.items);
         setValue('item_iids', rental.expand.items.map(item => item.iid));
+
+        // Parse instance data from remark
+        const parsedInstanceData = parseInstanceData(rental.remark);
+        setInstanceData(parsedInstanceData);
       }
 
       // Set form values - handle both 'T' and space separators in date strings
@@ -202,7 +212,7 @@ export function RentalDetailSheet({
         returned_on: returnedOnValue,
         expected_on: expectedOnValue,
         extended_on: extendedOnValue,
-        remark: rental.remark || '',
+        remark: extractUserNotes(rental.remark), // Extract only user notes, hide instance data
         employee: rental.employee || '',
         employee_back: rental.employee_back || '',
       });
@@ -214,10 +224,18 @@ export function RentalDetailSheet({
       if (!preloadedItemsAppliedRef.current) {
         // Reset for new rental
         setSelectedCustomer(null);
+        setInstanceData({}); // Reset instance data for new rental
 
         // Use preloaded items if provided
         const itemsToUse = preloadedItems.length > 0 ? preloadedItems : [];
         setSelectedItems(itemsToUse);
+
+        // Initialize instance data with 1 copy for each preloaded item
+        const initialInstanceData: InstanceData = {};
+        itemsToUse.forEach(item => {
+          initialInstanceData[item.id] = 1;
+        });
+        setInstanceData(initialInstanceData);
 
         // Calculate total deposit from preloaded items
         const totalDeposit = itemsToUse.reduce((sum, item) => sum + (item.deposit || 0), 0);
@@ -264,6 +282,25 @@ export function RentalDetailSheet({
       return () => clearTimeout(timer);
     }
   }, [isNewRental, open, currentIdentity, form, setValue]);
+
+  // Fetch item availability when selected items change
+  useEffect(() => {
+    if (selectedItems.length === 0) {
+      setItemAvailability(new Map());
+      return;
+    }
+
+    const fetchAvailability = async () => {
+      const itemIds = selectedItems.map(item => item.id);
+      const availabilityMap = await getMultipleItemAvailability(
+        itemIds,
+        rental?.id // Exclude current rental when editing
+      );
+      setItemAvailability(availabilityMap);
+    };
+
+    fetchAvailability();
+  }, [selectedItems, rental?.id]);
 
   // Search customers
   useEffect(() => {
@@ -451,8 +488,15 @@ export function RentalDetailSheet({
     setSelectedItems(newSelectedItems);
     setValue('item_iids', newSelectedItems.map(i => i.iid), { shouldDirty: true });
 
-    // Auto-calculate total deposit from all items
-    const totalDeposit = newSelectedItems.reduce((sum, i) => sum + (i.deposit || 0), 0);
+    // Initialize instance data with 1 copy for the new item
+    const newInstanceData = setCopyCount(instanceData, item.id, 1);
+    setInstanceData(newInstanceData);
+
+    // Auto-calculate total deposit from all items with copy counts
+    const totalDeposit = newSelectedItems.reduce((sum, i) => {
+      const copies = getCopyCount(newInstanceData, i.id);
+      return sum + ((i.deposit || 0) * copies);
+    }, 0);
     setValue('deposit', totalDeposit, { shouldDirty: true });
 
     setItemSearchOpen(false);
@@ -465,8 +509,38 @@ export function RentalDetailSheet({
     setSelectedItems(newSelectedItems);
     setValue('item_iids', newSelectedItems.map(i => i.iid), { shouldDirty: true });
 
+    // Remove from instance data
+    const newInstanceData = removeCopyCount(instanceData, itemId);
+    setInstanceData(newInstanceData);
+
+    // Recalculate deposit with copy counts
+    const totalDeposit = newSelectedItems.reduce((sum, i) => {
+      const copies = getCopyCount(newInstanceData, i.id);
+      return sum + ((i.deposit || 0) * copies);
+    }, 0);
+    setValue('deposit', totalDeposit, { shouldDirty: true });
+  };
+
+  const handleCopyCountChange = (itemId: string, newCount: number) => {
+    const item = selectedItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    // Validate against available copies
+    const availability = itemAvailability.get(itemId);
+    if (availability && newCount > availability.availableCopies) {
+      toast.error(`Nur ${availability.availableCopies} von ${availability.totalCopies} Exemplaren verfügbar`);
+      return;
+    }
+
+    // Update instance data
+    const newInstanceData = setCopyCount(instanceData, itemId, newCount);
+    setInstanceData(newInstanceData);
+
     // Recalculate deposit
-    const totalDeposit = newSelectedItems.reduce((sum, i) => sum + (i.deposit || 0), 0);
+    const totalDeposit = selectedItems.reduce((sum, i) => {
+      const copies = getCopyCount(newInstanceData, i.id);
+      return sum + ((i.deposit || 0) * copies);
+    }, 0);
     setValue('deposit', totalDeposit, { shouldDirty: true });
   };
 
@@ -501,9 +575,26 @@ export function RentalDetailSheet({
           setIsLoading(false);
           return;
         }
+
+        // Validate copy counts against availability
+        for (const item of items) {
+          const requestedCopies = getCopyCount(instanceData, item.id);
+          const availability = itemAvailability.get(item.id);
+
+          if (availability && requestedCopies > availability.availableCopies) {
+            toast.error(
+              `${item.name} (#${String(item.iid).padStart(4, '0')}): Nur ${availability.availableCopies} von ${availability.totalCopies} Exemplaren verfügbar`
+            );
+            setIsLoading(false);
+            return;
+          }
+        }
       }
 
       const itemIds = items.map(item => item.id);
+
+      // Serialize instance data into remark field
+      const remarkWithInstanceData = serializeInstanceData(instanceData, data.remark || '');
 
       const formData: Partial<Rental> = {
         customer: customer.id,
@@ -514,7 +605,7 @@ export function RentalDetailSheet({
         returned_on: data.returned_on || undefined,
         expected_on: data.expected_on,
         extended_on: data.extended_on || undefined,
-        remark: data.remark || undefined,
+        remark: remarkWithInstanceData || undefined,
         employee: data.employee,
         employee_back: data.employee_back || undefined,
       };
@@ -863,35 +954,102 @@ export function RentalDetailSheet({
                   {/* Selected Items Display */}
                   {selectedItems.length > 0 && (
                     <div className="space-y-2">
-                      {selectedItems.map((item) => (
-                        <div key={item.id} className="border rounded-lg p-3 bg-muted/50 flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2 mb-1">
-                              <span className="font-mono text-primary font-semibold">
-                                #{String(item.iid).padStart(4, '0')}
-                              </span>
-                              <span className="font-semibold truncate">{item.name}</span>
+                      {selectedItems.map((item) => {
+                        const copyCount = getCopyCount(instanceData, item.id);
+                        const availability = itemAvailability.get(item.id);
+                        const totalCopies = item.copies || 1;
+                        const hasMultipleCopies = totalCopies > 1;
+                        const depositPerCopy = item.deposit || 0;
+                        const totalDeposit = depositPerCopy * copyCount;
+
+                        return (
+                          <div key={item.id} className="border rounded-lg p-3 bg-muted/50">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                  <span className="font-mono text-primary font-semibold">
+                                    #{String(item.iid).padStart(4, '0')}
+                                  </span>
+                                  <span className="font-semibold truncate">{item.name}</span>
+                                </div>
+                                <div className="flex gap-3 text-xs text-muted-foreground">
+                                  {item.brand && <span>Marke: {item.brand}</span>}
+                                  {item.model && <span>Modell: {item.model}</span>}
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleItemRemove(item.id)}
+                                className="shrink-0 h-8 w-8 p-0"
+                                title="Entfernen"
+                              >
+                                <XIcon className="h-4 w-4" />
+                              </Button>
                             </div>
-                            <div className="flex gap-3 text-xs text-muted-foreground">
-                              {item.brand && <span>Marke: {item.brand}</span>}
-                              {item.model && <span>Modell: {item.model}</span>}
-                              <span className="font-medium text-foreground">
-                                {formatCurrency(item.deposit)}
-                              </span>
-                            </div>
+
+                            {/* Copy count selector for items with multiple copies */}
+                            {hasMultipleCopies && (
+                              <div className="mt-3 pt-3 border-t flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                  <Label className="text-xs text-muted-foreground">Anzahl:</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleCopyCountChange(item.id, Math.max(1, copyCount - 1))}
+                                      disabled={copyCount <= 1}
+                                      className="h-7 w-7 p-0"
+                                      title="Weniger"
+                                    >
+                                      <MinusIcon className="h-3 w-3" />
+                                    </Button>
+                                    <span className="font-mono font-semibold text-sm w-8 text-center">
+                                      {copyCount}
+                                    </span>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleCopyCountChange(item.id, copyCount + 1)}
+                                      disabled={availability ? copyCount >= availability.availableCopies : false}
+                                      className="h-7 w-7 p-0"
+                                      title="Mehr"
+                                    >
+                                      <PlusIcon className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">
+                                    {availability
+                                      ? `(${availability.availableCopies} von ${availability.totalCopies} verfügbar)`
+                                      : `(${totalCopies} Exemplare)`
+                                    }
+                                  </span>
+                                </div>
+                                <div className="text-sm font-medium">
+                                  {copyCount > 1 && (
+                                    <span className="text-muted-foreground text-xs mr-2">
+                                      {formatCurrency(depositPerCopy)} × {copyCount} =
+                                    </span>
+                                  )}
+                                  <span className="text-foreground">
+                                    {formatCurrency(totalDeposit)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Single copy items just show deposit */}
+                            {!hasMultipleCopies && (
+                              <div className="mt-2 text-sm font-medium text-foreground">
+                                {formatCurrency(depositPerCopy)}
+                              </div>
+                            )}
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleItemRemove(item.id)}
-                            className="shrink-0 h-8 w-8 p-0"
-                            title="Entfernen"
-                          >
-                            <XIcon className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {selectedItems.length > 1 && (
                         <div className="pt-3 border-t-2 border-primary">
                           <div className="flex items-center justify-between bg-primary/10 rounded-lg p-4">
@@ -899,7 +1057,10 @@ export function RentalDetailSheet({
                               Gesamt Pfand:
                             </span>
                             <span className="text-3xl font-bold text-primary">
-                              {formatCurrency(selectedItems.reduce((sum, i) => sum + (i.deposit || 0), 0))}
+                              {formatCurrency(selectedItems.reduce((sum, i) => {
+                                const copies = getCopyCount(instanceData, i.id);
+                                return sum + ((i.deposit || 0) * copies);
+                              }, 0))}
                             </span>
                           </div>
                         </div>
