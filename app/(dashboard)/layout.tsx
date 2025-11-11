@@ -7,9 +7,11 @@
 import { Navbar } from '@/components/layout/navbar';
 import { GlobalCommandMenu } from '@/components/search/global-command-menu';
 import { QuickFindModal } from '@/components/search/quick-find-modal';
+import { SequentialModeModal } from '@/components/sequential-mode/sequential-mode-modal';
 import { RealtimeStatus } from '@/components/ui/realtime-status';
 import { QuickFindProvider } from '@/hooks/use-quick-find';
 import { IdentityProvider } from '@/hooks/use-identity';
+import { SequentialModeProvider } from '@/hooks/use-sequential-mode';
 import { useRequireAuth } from '@/hooks/use-auth';
 
 export default function DashboardLayout({
@@ -32,17 +34,20 @@ export default function DashboardLayout({
 
   return (
     <IdentityProvider>
-      <QuickFindProvider>
-        <div className="flex h-screen flex-col">
-          <Navbar />
-          <main className="flex-1 overflow-y-auto pt-16">
-            {children}
-          </main>
-          <GlobalCommandMenu />
-          <QuickFindModal />
-          <RealtimeStatus />
-        </div>
-      </QuickFindProvider>
+      <SequentialModeProvider>
+        <QuickFindProvider>
+          <div className="flex h-screen flex-col">
+            <Navbar />
+            <main className="flex-1 overflow-y-auto pt-16">
+              {children}
+            </main>
+            <GlobalCommandMenu />
+            <QuickFindModal />
+            <SequentialModeModal />
+            <RealtimeStatus />
+          </div>
+        </QuickFindProvider>
+      </SequentialModeProvider>
     </IdentityProvider>
   );
 }

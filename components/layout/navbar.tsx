@@ -22,6 +22,7 @@ import {
   Zap,
   Tag,
   ClipboardCheck,
+  Layers,
 } from 'lucide-react';
 import { NavLink } from './nav-link';
 import { IdentityPicker } from './identity-picker';
@@ -36,6 +37,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuickFind } from '@/hooks/use-quick-find';
+import { useSequentialMode } from '@/hooks/use-sequential-mode';
 
 const navigationItems = [
   {
@@ -68,6 +70,7 @@ const navigationItems = [
 export function Navbar() {
   const { user, logout } = useAuth();
   const { setOpen } = useQuickFind();
+  const { setOpen: setSequentialModeOpen } = useSequentialMode();
   const userEmail = (user as any)?.email || 'admin@leihlokal.de';
 
   // State for current time
@@ -110,17 +113,23 @@ export function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 h-16 border-b-2 border-primary bg-background">
       <div className="flex h-full items-center px-4">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center">
-          <Image
-            src="/smile.svg"
-            alt="LeihLokal"
-            width={40}
-            height={40}
-            className="h-10 w-10"
-            unoptimized
-            priority
-          />
-        </Link>
+        <div
+          onDoubleClick={() => setSequentialModeOpen(true)}
+          className="flex items-center cursor-pointer"
+          title="Doppelklick für Sequential Mode"
+        >
+          <Link href="/dashboard" className="flex items-center">
+            <Image
+              src="/smile.svg"
+              alt="LeihLokal"
+              width={40}
+              height={40}
+              className="h-10 w-10"
+              unoptimized
+              priority
+            />
+          </Link>
+        </div>
 
         {/* Main Navigation */}
         <div className="ml-8 flex flex-1 items-center space-x-1">
@@ -172,6 +181,14 @@ export function Navbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Mehr</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSequentialModeOpen(true)}>
+                <Layers className="mr-2 h-4 w-4" />
+                <span>Sequential Mode</span>
+                <kbd className="ml-auto text-xs text-muted-foreground">
+                  {isMac ? '⌘⇧R' : 'Strg⇧R'}
+                </kbd>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href="/system-check" className="flex items-center cursor-pointer">
