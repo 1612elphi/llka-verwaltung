@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, CheckCircle2, ExternalLink, ArrowRight } from 'lucide-react';
+import { Calendar, CheckCircle2, ExternalLink, ArrowRight, Printer } from 'lucide-react';
 import { collections } from '@/lib/pocketbase/client';
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 import { formatDate, formatDateTime } from '@/lib/utils/formatting';
@@ -148,6 +148,10 @@ export function TodaysReservationsSection({
     }
   }
 
+  function handlePrint() {
+    window.print();
+  }
+
   function ReservationItem({ reservation }: { reservation: ReservationExpanded }) {
     const itemCount = reservation.items?.length || 0;
 
@@ -166,7 +170,7 @@ export function TodaysReservationsSection({
                 {reservation.customer_name}
               </span>
               {reservation.is_new_customer && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge className="text-xs">
                   Neu
                 </Badge>
               )}
@@ -174,7 +178,7 @@ export function TodaysReservationsSection({
             <p className="text-xs text-muted-foreground mb-1">
               Abholung: {formatDateTime(reservation.pickup)}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs truncate">
               {itemsText}
             </p>
             {reservation.comments && (
@@ -182,13 +186,7 @@ export function TodaysReservationsSection({
                 "{reservation.comments}"
               </p>
             )}
-            {(reservation.customer_phone || reservation.customer_email) && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {reservation.customer_phone && `📞 ${reservation.customer_phone}`}
-                {reservation.customer_phone && reservation.customer_email && ' • '}
-                {reservation.customer_email && `✉️ ${reservation.customer_email}`}
-              </p>
-            )}
+
           </div>
         </div>
         <div className="flex gap-2">
@@ -221,28 +219,128 @@ export function TodaysReservationsSection({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          <span>Heutige Reservierungen</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Lädt...</p>
-        ) : reservations.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Keine Reservierungen für heute geplant.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {reservations.map((reservation) => (
-              <ReservationItem key={reservation.id} reservation={reservation} />
-            ))}
+    <>
+      {/* Print styles to hide everything except our print layout */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @media print {
+            body * {
+              visibility: hidden !important;
+            }
+            #reservation-print-root,
+            #reservation-print-root * {
+              visibility: visible !important;
+            }
+            #reservation-print-root {
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+            }
+          }
+        `
+      }} />
+
+      {/* Regular display (hidden during print) */}
+      <Card className="print:hidden">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              <span>Heutige Reservierungen</span>
+            </CardTitle>
+            {!loading && reservations.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handlePrint}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Drucken
+              </Button>
+            )}
           </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Lädt...</p>
+          ) : reservations.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Keine Reservierungen für heute geplant.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {reservations.map((reservation) => (
+                <ReservationItem key={reservation.id} reservation={reservation} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Print-only layout */}
+      <div id="reservation-print-root" className="hidden print:block fixed inset-0 bg-white p-8 z-[9999]">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2">Heutige Reservierungen</h1>
+          <p className="text-sm text-gray-600">{formatDate(new Date())}</p>
+        </div>
+
+        <div className="space-y-6">
+          {reservations.map((reservation, index) => (
+            <div key={reservation.id} className="border-b pb-4 mb-4">
+              <div className="flex items-start gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-5 w-5 print:appearance-auto"
+                  disabled
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-base">
+                      {index + 1}. {reservation.customer_name}
+                    </span>
+                    {reservation.is_new_customer && (
+                      <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                        Neukunde
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 mb-1">
+                    Abholung: {formatDateTime(reservation.pickup)}
+                  </p>
+                  {reservation.comments && (
+                    <p className="text-sm text-gray-600 italic mb-2">
+                      Kommentar: "{reservation.comments}"
+                    </p>
+                  )}
+
+                  {/* Items checklist */}
+                  {reservation.expand?.items && reservation.expand.items.length > 0 && (
+                    <div className="ml-8 mt-2 space-y-1">
+                      <p className="text-sm font-medium mb-2">Gegenstände:</p>
+                      {reservation.expand.items.map((item) => (
+                        <div key={item.id} className="flex items-start gap-2">
+                          <input
+                            type="checkbox"
+                            className="mt-0.5 h-4 w-4 print:appearance-auto"
+                            disabled
+                          />
+                          <span className="text-sm">
+                            {String(item.iid).padStart(4, '0')} - {item.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {reservations.length === 0 && (
+          <p className="text-gray-500">Keine Reservierungen für heute geplant.</p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </>
   );
 }
