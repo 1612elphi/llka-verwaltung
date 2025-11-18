@@ -1,6 +1,7 @@
 /**
  * Rental Print Content Component
  * Generates the HTML content for printing a rental receipt
+ * Follows print standards: no fills, borders/outlines only, proper margins
  */
 
 import { formatCurrency } from '@/lib/utils/formatting';
@@ -52,18 +53,18 @@ export function generateRentalPrintContent({
 
     return `
       <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; font-family: monospace; font-weight: 600; color: #dc2626;">
+        <td style="padding: 10px 12px; border-bottom: 1px solid #333; font-family: monospace; font-weight: 600;">
           #${String(item.iid).padStart(4, '0')}
         </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">
+        <td style="padding: 10px 12px; border-bottom: 1px solid #333;">
           <strong>${item.name}</strong>
-          ${item.brand ? `<br><span style="color: #666; font-size: 0.9em;">Marke: ${item.brand}</span>` : ''}
-          ${item.model ? `<br><span style="color: #666; font-size: 0.9em;">Modell: ${item.model}</span>` : ''}
+          ${item.brand ? `<br><span style="font-size: 0.9em;">Marke: ${item.brand}</span>` : ''}
+          ${item.model ? `<br><span style="font-size: 0.9em;">Modell: ${item.model}</span>` : ''}
         </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: center;">
+        <td style="padding: 10px 12px; border-bottom: 1px solid #333; text-align: center;">
           ${copyCount}${hasCopies ? ' Stück' : ''}
         </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; font-weight: 600;">
+        <td style="padding: 10px 12px; border-bottom: 1px solid #333; text-align: right; font-weight: 600;">
           ${formatCurrency(totalDeposit)}
         </td>
       </tr>
@@ -82,109 +83,103 @@ export function generateRentalPrintContent({
         }
 
         @page {
-          margin: 15mm;
+          margin: 20mm;
+          size: A4;
         }
 
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 40px;
+          line-height: 1.5;
+          color: #000;
+          max-width: 100%;
+          margin: 0;
+          padding: 0;
+          font-size: 12pt;
         }
 
         .header {
           text-align: center;
-          border-bottom: 3px solid #dc2626;
-          padding-bottom: 20px;
-          margin-bottom: 30px;
+          border-bottom: 2px solid #000;
+          padding-bottom: 15px;
+          margin-bottom: 20px;
         }
 
         .header h1 {
           margin: 0 0 5px 0;
-          color: #dc2626;
-          font-size: 28px;
+          font-size: 24pt;
+          font-weight: bold;
         }
 
         .header .subtitle {
-          color: #666;
-          font-size: 14px;
+          font-size: 10pt;
         }
 
         .section {
-          margin-bottom: 25px;
+          margin-bottom: 20px;
         }
 
         .section-title {
-          font-size: 16px;
+          font-size: 12pt;
           font-weight: 600;
-          color: #dc2626;
-          border-bottom: 2px solid #e5e5e5;
-          padding-bottom: 8px;
-          margin-bottom: 15px;
+          border-bottom: 1px solid #000;
+          padding-bottom: 6px;
+          margin-bottom: 12px;
         }
 
         .info-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 15px;
+          gap: 10px;
         }
 
         .info-item {
-          background: #f8f9fa;
-          padding: 12px;
-          border-radius: 6px;
+          border: 1px solid #333;
+          padding: 10px;
         }
 
         .info-label {
-          font-size: 12px;
-          color: #666;
-          margin-bottom: 4px;
+          font-size: 9pt;
+          margin-bottom: 3px;
         }
 
         .info-value {
           font-weight: 600;
-          font-size: 14px;
+          font-size: 11pt;
         }
 
         .customer-box {
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          border-radius: 8px;
-          padding: 15px;
+          border: 2px solid #000;
+          padding: 12px;
         }
 
         .customer-id {
           font-family: monospace;
           font-weight: 600;
-          color: #dc2626;
-          font-size: 16px;
+          font-size: 12pt;
         }
 
         .customer-name {
-          font-size: 18px;
+          font-size: 14pt;
           font-weight: 600;
           margin: 5px 0;
         }
 
         .customer-details {
-          color: #666;
-          font-size: 13px;
+          font-size: 10pt;
         }
 
         table {
           width: 100%;
           border-collapse: collapse;
-          margin-top: 10px;
+          margin-top: 8px;
         }
 
         th {
-          background: #f8f9fa;
-          padding: 12px;
+          padding: 10px 12px;
           text-align: left;
           font-weight: 600;
-          border-bottom: 2px solid #e5e5e5;
+          border-top: 2px solid #000;
+          border-bottom: 2px solid #000;
         }
 
         th:last-child {
@@ -192,41 +187,38 @@ export function generateRentalPrintContent({
         }
 
         .total-row {
-          background: #fef2f2;
           font-weight: 600;
         }
 
         .total-row td {
-          padding: 15px 12px;
-          border-top: 2px solid #dc2626;
+          padding: 12px;
+          border-top: 2px solid #000;
+          border-bottom: 2px solid #000;
         }
 
         .footer {
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid #e5e5e5;
+          margin-top: 30px;
+          padding-top: 15px;
+          border-top: 1px solid #000;
           text-align: center;
-          color: #999;
-          font-size: 12px;
+          font-size: 9pt;
         }
 
         .note-box {
-          background: #fffbeb;
-          border: 1px solid #fde68a;
-          border-radius: 6px;
-          padding: 12px;
-          margin-top: 10px;
+          border: 1px solid #000;
+          padding: 10px;
+          margin-top: 8px;
         }
 
         .note-label {
           font-weight: 600;
-          color: #92400e;
           margin-bottom: 5px;
         }
 
         @media print {
           body {
-            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
 
           .no-print {
@@ -238,7 +230,7 @@ export function generateRentalPrintContent({
     <body>
       <div class="header">
         <h1>Leihbeleg</h1>
-        <div class="subtitle">Kundenexemplar • LeihLokal</div>
+        <div class="subtitle">Kundenexemplar &bull; LeihLokal</div>
       </div>
 
       <div class="section">
@@ -295,7 +287,7 @@ export function generateRentalPrintContent({
             ${itemsHtml}
             <tr class="total-row">
               <td colspan="3" style="text-align: right;">Gesamt Pfand:</td>
-              <td style="text-align: right; font-size: 16px;">${formatCurrency(deposit)}</td>
+              <td style="text-align: right; font-size: 14pt;">${formatCurrency(deposit)}</td>
             </tr>
           </tbody>
         </table>
