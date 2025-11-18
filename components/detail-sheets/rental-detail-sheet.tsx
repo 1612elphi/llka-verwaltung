@@ -142,6 +142,9 @@ export function RentalDetailSheet({
   const [instanceData, setInstanceData] = useState<InstanceData>({});
   const [itemAvailability, setItemAvailability] = useState<Map<string, ItemAvailability>>(new Map());
 
+  // Store original item PocketBase IDs to avoid re-lookup issues when editing
+  const [originalItemIds, setOriginalItemIds] = useState<string[]>([]);
+
   // Date picker state
   const [rentedOnPickerOpen, setRentedOnPickerOpen] = useState(false);
   const [expectedOnPickerOpen, setExpectedOnPickerOpen] = useState(false);
@@ -186,8 +189,18 @@ export function RentalDetailSheet({
         setSelectedItems(rental.expand.items);
         setValue('item_iids', rental.expand.items.map(item => item.iid));
 
+        // Store original PocketBase IDs to preserve them during save
+        // This prevents the IID→PocketBase ID lookup from causing false "item changed" detection
+        setOriginalItemIds(rental.expand.items.map(item => item.id));
+
         // Load instance data from requested_copies field
         setInstanceData(rental.requested_copies || {});
+      } else {
+        // No expanded items - try to use the raw items array from the rental
+        // This is a fallback if expand fails
+        if (rental.items && rental.items.length > 0) {
+          setOriginalItemIds(rental.items);
+        }
       }
 
       // Set form values - handle both 'T' and space separators in date strings
@@ -224,6 +237,7 @@ export function RentalDetailSheet({
         // Reset for new rental
         setSelectedCustomer(null);
         setInstanceData({}); // Reset instance data for new rental
+        setOriginalItemIds([]); // Clear original item IDs for new rental
 
         // Use preloaded items if provided
         const itemsToUse = preloadedItems.length > 0 ? preloadedItems : [];
@@ -557,6 +571,42 @@ export function RentalDetailSheet({
         })
       );
 
+      // For existing rentals, use original item IDs to prevent false "item changed" detection
+      // This is crucial: the PocketBase hook compares old vs new item IDs
+      // If we send the same items but with IDs looked up fresh, they might be treated as "new"
+      let itemIds: string[];
+
+      if (!isNewRental && originalItemIds.length > 0) {
+        // Build item IDs preserving original IDs for unchanged items
+        const currentItemIids = data.item_iids;
+        const originalItemIids = selectedItems
+          .filter(item => originalItemIds.includes(item.id))
+          .map(item => item.iid);
+
+        // Check if items have changed
+        const itemsUnchanged =
+          currentItemIids.length === originalItemIids.length &&
+          currentItemIids.every(iid => originalItemIids.includes(iid));
+
+        if (itemsUnchanged) {
+          // Items haven't changed - use original PocketBase IDs
+          // This ensures the backend sees exactly the same IDs
+          itemIds = originalItemIds;
+        } else {
+          // Items have changed - need to figure out which are original vs new
+          itemIds = items.map(item => {
+            // If this item was in the original rental, use its original ID
+            const originalItem = selectedItems.find(si =>
+              si.iid === item.iid && originalItemIds.includes(si.id)
+            );
+            return originalItem ? originalItem.id : item.id;
+          });
+        }
+      } else {
+        // New rental - look up all items
+        itemIds = items.map(item => item.id);
+      }
+
       // Validate that all items are available (instock or reserved)
       // Skip this check if we're returning a rental (returned_on is set)
       // Also skip this check when editing an existing rental (the copy availability check below handles it)
@@ -590,8 +640,6 @@ export function RentalDetailSheet({
           }
         }
       }
-
-      const itemIds = items.map(item => item.id);
 
       const formData: Partial<Rental> = {
         customer: customer.id,
