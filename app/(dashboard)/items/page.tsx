@@ -21,14 +21,15 @@ import { useColumnVisibility } from '@/hooks/use-column-visibility';
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 import { itemsFilterConfig } from '@/lib/filters/filter-configs';
 import { itemsColumnConfig } from '@/lib/tables/column-configs';
-import type { Item } from '@/types';
+import type { Item, ItemWithStats } from '@/types';
 import { getItemStatusLabel, ITEM_STATUS_COLORS } from '@/lib/constants/statuses';
 import { getCategoryLabel } from '@/lib/constants/categories';
+import { enrichItemsWithStats } from '@/lib/utils/item-stats';
 
 export default function ItemsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<ItemWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,20 +61,24 @@ export default function ItemsPage() {
 
   // Real-time subscription for live updates
   useRealtimeSubscription<Item>('item', {
-    onCreated: (item) => {
+    onCreated: async (item) => {
+      // Enrich the new item with stats
+      const enriched = await enrichItemsWithStats([item]);
       setItems((prev) => {
         // Check if item already exists (avoid duplicates)
         if (prev.some((i) => i.id === item.id)) {
           return prev;
         }
         // Add to beginning of list
-        return [item, ...prev];
+        return [enriched[0], ...prev];
       });
     },
-    onUpdated: (item) => {
+    onUpdated: async (item) => {
+      // Enrich the updated item with stats
+      const enriched = await enrichItemsWithStats([item]);
       // Update item in list
       setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? item : i))
+        prev.map((i) => (i.id === item.id ? enriched[0] : i))
       );
     },
     onDeleted: (item) => {
@@ -144,10 +149,13 @@ export default function ItemsPage() {
         }
       );
 
+      // Enrich items with rental statistics
+      const enrichedItems = await enrichItemsWithStats(result.items);
+
       if (isInitialLoad) {
-        setItems(result.items);
+        setItems(enrichedItems);
       } else {
-        setItems((prev) => [...prev, ...result.items]);
+        setItems((prev) => [...prev, ...enrichedItems]);
       }
 
       setHasMore(result.items.length === perPage);
@@ -415,7 +423,7 @@ export default function ItemsPage() {
   };
 
   // Render table body cell for a given column and item
-  const renderBodyCell = (columnId: string, item: Item) => {
+  const renderBodyCell = (columnId: string, item: ItemWithStats) => {
     switch (columnId) {
       case 'iid':
         return (
@@ -556,8 +564,7 @@ export default function ItemsPage() {
       case 'total_rentals':
         return (
           <td key="total_rentals" className="px-4 py-3 text-sm text-center">
-            {/* TODO: Compute total rentals count */}
-            —
+            {item.total_rentals || 0}
           </td>
         );
       case 'internal_note':

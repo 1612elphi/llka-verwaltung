@@ -169,7 +169,7 @@ export const itemsColumnConfig: EntityColumnConfig = {
       id: 'total_rentals',
       label: 'Alle Ausleihen',
       defaultVisible: true,
-      sortable: false, // Computed client-side
+      sortable: false, // Stats computed client-side, cannot sort server-side
     },
     {
       id: 'status',

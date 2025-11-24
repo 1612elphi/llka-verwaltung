@@ -10,6 +10,8 @@ import {
   Calendar,
   Users,
   Package,
+  AlertCircle,
+  BarChart3,
 } from 'lucide-react';
 import { fetchStats, clearStatsCache, type StatsResponse } from '@/lib/api/stats';
 import { DashboardNotes } from '@/components/dashboard/dashboard-notes';
@@ -72,6 +74,23 @@ export default function DashboardPage() {
           <Link href="/items?action=new">
             <Package className="mr-2 h-4 w-4" />
             Neuer Gegenstand
+          </Link>
+        </Button>
+
+        {/* Divider */}
+        <div className="w-px bg-border self-stretch mx-1" />
+
+        {/* New Quick Access Buttons */}
+        <Button variant="outline" asChild size="lg" className="shadow-sm hover:shadow-md transition-shadow border-red-200 hover:border-red-300 hover:bg-red-50">
+          <Link href="/overdue">
+            <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
+            Überfällige Ausleihen
+          </Link>
+        </Button>
+        <Button variant="outline" asChild size="lg" className="shadow-sm hover:shadow-md transition-shadow border-blue-200 hover:border-blue-300 hover:bg-blue-50">
+          <Link href="/items/analytics">
+            <BarChart3 className="mr-2 h-4 w-4 text-blue-500" />
+            Gegenstands-Analytik
           </Link>
         </Button>
       </div>

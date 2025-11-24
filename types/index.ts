@@ -258,11 +258,14 @@ export interface Item extends BaseRecord {
  * Item with computed rental statistics
  */
 export interface ItemWithStats extends Item {
-  /** Total number of times rented */
-  rental_count: number;
+  /** Total number of times rented (all time) */
+  total_rentals: number;
 
-  /** Currently available for rental? */
-  is_available: boolean;
+  /** Number of currently active rentals */
+  active_rentals: number;
+
+  /** Days since last rental (null if never rented) */
+  days_since_last_rental: number | null;
 }
 
 /**

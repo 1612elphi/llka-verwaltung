@@ -23,6 +23,8 @@ import {
   Tag,
   ClipboardCheck,
   Layers,
+  BarChart3,
+  AlertCircle,
 } from 'lucide-react';
 import { NavLink } from './nav-link';
 import { IdentityPicker } from './identity-picker';
@@ -191,6 +193,12 @@ export function Navbar() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
+                <Link href="/overdue" className="flex items-center cursor-pointer">
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  <span>Überfällige Ausleihen</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <Link href="/system-check" className="flex items-center cursor-pointer">
                   <ClipboardCheck className="mr-2 h-4 w-4" />
                   <span>System Check Mode</span>
@@ -200,6 +208,12 @@ export function Navbar() {
                 <Link href="/label-designer" className="flex items-center cursor-pointer">
                   <Tag className="mr-2 h-4 w-4" />
                   <span>Label Designer</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/items/analytics" className="flex items-center cursor-pointer">
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  <span>Gegenstands-Analytik</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
