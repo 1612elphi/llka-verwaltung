@@ -81,16 +81,16 @@ export default function DashboardPage() {
         <div className="w-px bg-border self-stretch mx-1" />
 
         {/* New Quick Access Buttons */}
-        <Button variant="outline" asChild size="lg" className="shadow-sm hover:shadow-md transition-shadow border-red-200 hover:border-red-300 hover:bg-red-50">
+        <Button variant="outline" asChild size="lg" className="flex-2 shadow-sm transition-shadow border-red-200 hover:border-red-300 hover:bg-red-500">
           <Link href="/overdue">
-            <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
-            Überfällige Ausleihen
+            <AlertCircle className="mr-2 h-4 w-4  hover:text-white text-red-500"/>
+            Überfälliges
           </Link>
         </Button>
-        <Button variant="outline" asChild size="lg" className="shadow-sm hover:shadow-md transition-shadow border-blue-200 hover:border-blue-300 hover:bg-blue-50">
+        <Button variant="outline" asChild size="lg" className="flex-2 shadow-sm transition-shadow border-blue-200 hover:border-blue-300 hover:bg-blue-500">
           <Link href="/items/analytics">
-            <BarChart3 className="mr-2 h-4 w-4 text-blue-500" />
-            Gegenstands-Analytik
+            <BarChart3 className="mr-2 h-4 w-4  hover:text-white text-blue-500" />
+            Inventaranalyse
           </Link>
         </Button>
       </div>

@@ -1,11 +1,12 @@
 /**
  * Sequential Mode Hook
  * Context and state management for the keyboard-driven rental flow
+ * Keyboard shortcut: O → O
  */
 
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { Customer, Item } from '@/types';
 
 export type SequentialModeStep = 1 | 2 | 3 | 4;
@@ -121,19 +122,6 @@ export function SequentialModeProvider({ children }: { children: ReactNode }) {
     (sum, { item, quantity }) => sum + (item.deposit || 0) * quantity,
     0
   );
-
-  // Keyboard shortcut: Ctrl+Shift+R / Cmd+Shift+R
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'R' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
-        e.preventDefault();
-        setOpen(true);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [setOpen]);
 
   const value: SequentialModeContextValue = {
     open,

@@ -19,12 +19,17 @@ import {
   MoreVertical,
   User,
   Command,
+  ArrowBigUp as Shift,
+  Option,
   Zap,
   Tag,
   ClipboardCheck,
   Layers,
   BarChart3,
   AlertCircle,
+  Search,
+  Keyboard,
+  ArrowRight,
 } from 'lucide-react';
 import { NavLink } from './nav-link';
 import { IdentityPicker } from './identity-picker';
@@ -40,6 +45,8 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { useQuickFind } from '@/hooks/use-quick-find';
 import { useSequentialMode } from '@/hooks/use-sequential-mode';
+import { useCommandMenu } from '@/hooks/use-command-menu';
+import { useKeyboardShortcutsReferenceContext } from '@/components/keyboard-shortcuts/keyboard-shortcuts-reference';
 
 const navigationItems = [
   {
@@ -73,6 +80,8 @@ export function Navbar() {
   const { user, logout } = useAuth();
   const { setOpen } = useQuickFind();
   const { setOpen: setSequentialModeOpen } = useSequentialMode();
+  const { setOpen: setCommandMenuOpen } = useCommandMenu();
+  const { setOpen: setKeyboardShortcutsOpen } = useKeyboardShortcutsReferenceContext();
   const userEmail = (user as any)?.email || 'admin@leihlokal.de';
 
   // State for current time
@@ -147,11 +156,13 @@ export function Navbar() {
 
         {/* Time and Date */}
         <div className="flex flex-col items-end mr-4 text-sm">
-          <div className="font-mono font-semibold text-foreground">
-            {formatTime(currentTime)}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {formatDate(currentTime)}
+
+          <div className="font-mono">
+            {currentTime.toLocaleDateString('de-DE', { 
+              day: '2-digit', 
+              month: '2-digit', 
+              year: '2-digit' 
+            })}
           </div>
         </div>
 
@@ -164,12 +175,13 @@ export function Navbar() {
           size="sm"
           onClick={() => setOpen(true)}
           className="mr-2 h-7 px-2 gap-1.5 hover:bg-accent transition-colors"
-          title="Quick Find (Cmd+P)"
+          title="Quick Find (O → F)"
         >
           <Zap className="h-3 w-3" />
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1 py-0.5 text-[9px] font-medium bg-muted border border-border rounded">
-            <Command className="h-2 w-2" />
-            <span>P</span>
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1 py-0.5 font-medium bg-muted border border-border rounded text-xs">
+            <span>O</span>
+            <ArrowRight className="h-2.5 w-2.5" />
+            <span>F</span>
           </kbd>
         </Button>
 
@@ -184,55 +196,110 @@ export function Navbar() {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Mehr</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setCommandMenuOpen(true)}>
+                <Search className="mr-2 h-4 w-4" />
+                <span>Suche</span>
+                <kbd className="ml-auto inline-flex items-center gap-0.5 px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground rounded border border-border">
+                  <span>O</span>
+                  <ArrowRight className="h-3 w-3" />
+                  <span>S</span>
+                </kbd>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setOpen(true)}>
+                <Zap className="mr-2 h-4 w-4" />
+                <span>Finden</span>
+                <kbd className="ml-auto inline-flex items-center gap-0.5 px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground rounded border border-border">
+                  <span>O</span>
+                  <ArrowRight className="h-3 w-3" />
+                  <span>F</span>
+                </kbd>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSequentialModeOpen(true)}>
                 <Layers className="mr-2 h-4 w-4" />
-                <span>Sequential Mode</span>
-                <kbd className="ml-auto text-xs text-muted-foreground">
-                  {isMac ? '⌘⇧R' : 'Strg⇧R'}
+                <span>Eintragen</span>
+                <kbd className="ml-auto inline-flex items-center gap-0.5 px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground rounded border border-border">
+                  <span>O</span>
+                  <ArrowRight className="h-3 w-3" />
+                  <span>O</span>
                 </kbd>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/overdue" className="flex items-center cursor-pointer">
-                  <AlertCircle className="mr-2 h-4 w-4" />
-                  <span>Überfällige Ausleihen</span>
+                <Link href="/overdue" className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center">
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    <span>Überfällige Ausleihen</span>
+                  </div>
+                  <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground rounded border border-border">
+                    <span>G</span>
+                    <ArrowRight className="h-3 w-3" />
+                    <span>O</span>
+                  </kbd>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/system-check" className="flex items-center cursor-pointer">
-                  <ClipboardCheck className="mr-2 h-4 w-4" />
-                  <span>System Check Mode</span>
+                <Link href="/items/analytics" className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center">
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    <span>Inventaranalyse</span>
+                  </div>
+                  <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground rounded border border-border">
+                    <span>G</span>
+                    <ArrowRight className="h-3 w-3" />
+                    <span>I</span>
+                  </kbd>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/label-designer" className="flex items-center cursor-pointer">
-                  <Tag className="mr-2 h-4 w-4" />
-                  <span>Label Designer</span>
+                <Link href="/system-check" className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center">
+                    <ClipboardCheck className="mr-2 h-4 w-4" />
+                    <span>Systemcheck</span>
+                  </div>
+                  <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground rounded border border-border">
+                    <span>G</span>
+                    <ArrowRight className="h-3 w-3" />
+                    <span>S</span>
+                  </kbd>
                 </Link>
               </DropdownMenuItem>
+
               <DropdownMenuItem asChild>
-                <Link href="/items/analytics" className="flex items-center cursor-pointer">
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  <span>Gegenstands-Analytik</span>
+                <Link href="/label-designer" className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center">
+                    <Tag className="mr-2 h-4 w-4" />
+                    <span>Label Designer</span>
+                  </div>
+                  <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground rounded border border-border">
+                    <span>G</span>
+                    <ArrowRight className="h-3 w-3" />
+                    <span>P</span>
+                  </kbd>
                 </Link>
               </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/logs" className="flex items-center cursor-pointer">
-                  <FileText className="mr-2 h-4 w-4" />
-                  <span>Logs</span>
+                <Link href="/logs" className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center">
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>Logs</span>
+                  </div>
+                  <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground rounded border border-border">
+                    <span>G</span>
+                    <ArrowRight className="h-3 w-3" />
+                    <span>L</span>
+                  </kbd>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings" className="flex items-center cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Einstellungen</span>
-                </Link>
+              <DropdownMenuItem onClick={() => setKeyboardShortcutsOpen(true)}>
+                <Keyboard className="mr-2 h-4 w-4" />
+                <span>Tastaturkürzel</span>
+                <kbd className="ml-auto inline-flex items-center gap-0.5 px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground rounded border border-border">
+                  <span>/</span>
+                </kbd>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                {userEmail}
-              </DropdownMenuLabel>
               <DropdownMenuItem onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Abmelden</span>

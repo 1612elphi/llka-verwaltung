@@ -90,7 +90,7 @@ export function Sidebar() {
         <div className="flex h-16 items-center justify-between border-b px-4">
           {!collapsed && (
             <h1 className="text-lg font-semibold text-primary">
-              LeihLokal
+              leih.lokal
             </h1>
           )}
           <Button

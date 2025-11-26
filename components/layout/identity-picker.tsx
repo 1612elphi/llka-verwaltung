@@ -19,28 +19,34 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 export function IdentityPicker() {
-  const { currentIdentity, setIdentity, clearIdentity, identityHistory } = useIdentity();
-  const [open, setOpen] = useState(false);
+  const {
+    currentIdentity,
+    setIdentity,
+    clearIdentity,
+    identityHistory,
+    popoverOpen,
+    setPopoverOpen,
+  } = useIdentity();
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto-focus input when popover opens
   useEffect(() => {
-    if (open && inputRef.current) {
+    if (popoverOpen && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [open]);
+  }, [popoverOpen]);
 
   // Reset input when popover closes
   useEffect(() => {
-    if (!open) {
+    if (!popoverOpen) {
       setInputValue('');
     }
-  }, [open]);
+  }, [popoverOpen]);
 
   const handleSelectIdentity = (identity: string) => {
     setIdentity(identity);
-    setOpen(false);
+    setPopoverOpen(false);
     setInputValue('');
   };
 
@@ -59,7 +65,7 @@ export function IdentityPicker() {
 
   const handleClear = () => {
     clearIdentity();
-    setOpen(false);
+    setPopoverOpen(false);
     setInputValue('');
   };
 
@@ -69,7 +75,7 @@ export function IdentityPicker() {
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
       <PopoverTrigger asChild>
         <Button
           variant={currentIdentity ? 'default' : 'outline'}

@@ -4,15 +4,44 @@
 
 'use client';
 
+import { useEffect } from 'react';
 import { Navbar } from '@/components/layout/navbar';
 import { GlobalCommandMenu } from '@/components/search/global-command-menu';
 import { QuickFindModal } from '@/components/search/quick-find-modal';
 import { SequentialModeModal } from '@/components/sequential-mode/sequential-mode-modal';
 import { RealtimeStatus } from '@/components/ui/realtime-status';
-import { QuickFindProvider } from '@/hooks/use-quick-find';
-import { IdentityProvider } from '@/hooks/use-identity';
-import { SequentialModeProvider } from '@/hooks/use-sequential-mode';
+import { QuickFindProvider, useQuickFind } from '@/hooks/use-quick-find';
+import { IdentityProvider, useIdentity } from '@/hooks/use-identity';
+import { SequentialModeProvider, useSequentialMode } from '@/hooks/use-sequential-mode';
 import { useRequireAuth } from '@/hooks/use-auth';
+import {
+  KeyboardShortcutsProvider,
+  useKeyboardShortcuts,
+} from '@/hooks/use-keyboard-shortcuts';
+import { useCommandMenu } from '@/hooks/use-command-menu';
+import { KeyboardShortcutsReferenceProvider } from '@/components/keyboard-shortcuts/keyboard-shortcuts-reference';
+
+/**
+ * Bridge component to connect keyboard shortcuts to modal states
+ * Must be inside all provider contexts to access their setters
+ */
+function KeyboardShortcutBridge() {
+  const keyboardShortcuts = useKeyboardShortcuts();
+  const commandMenu = useCommandMenu();
+  const quickFind = useQuickFind();
+  const sequentialMode = useSequentialMode();
+  const identity = useIdentity();
+
+  // Connect modal setters to keyboard shortcuts context
+  useEffect(() => {
+    keyboardShortcuts.registerCommandMenu(commandMenu.setOpen);
+    keyboardShortcuts.registerQuickFind(quickFind.setOpen);
+    keyboardShortcuts.registerSequentialMode(sequentialMode.setOpen);
+    keyboardShortcuts.registerIdentityPicker(identity.setPopoverOpen);
+  }, [commandMenu, quickFind, sequentialMode, identity, keyboardShortcuts]);
+
+  return null;
+}
 
 export default function DashboardLayout({
   children,
@@ -33,21 +62,26 @@ export default function DashboardLayout({
   }
 
   return (
-    <IdentityProvider>
-      <SequentialModeProvider>
-        <QuickFindProvider>
-          <div className="flex h-screen flex-col">
-            <Navbar />
-            <main className="flex-1 overflow-y-auto pt-16">
-              {children}
-            </main>
-            <GlobalCommandMenu />
-            <QuickFindModal />
-            <SequentialModeModal />
-            <RealtimeStatus />
-          </div>
-        </QuickFindProvider>
-      </SequentialModeProvider>
-    </IdentityProvider>
+    <KeyboardShortcutsProvider>
+      <KeyboardShortcutsReferenceProvider>
+        <IdentityProvider>
+          <SequentialModeProvider>
+            <QuickFindProvider>
+              <div className="flex h-screen flex-col">
+                <Navbar />
+                <main className="flex-1 overflow-y-auto pt-16">
+                  {children}
+                </main>
+                <GlobalCommandMenu />
+                <QuickFindModal />
+                <SequentialModeModal />
+                <RealtimeStatus />
+                <KeyboardShortcutBridge />
+              </div>
+            </QuickFindProvider>
+          </SequentialModeProvider>
+        </IdentityProvider>
+      </KeyboardShortcutsReferenceProvider>
+    </KeyboardShortcutsProvider>
   );
 }

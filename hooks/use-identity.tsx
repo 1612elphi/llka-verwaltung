@@ -19,6 +19,12 @@ interface IdentityContextType {
 
   /** Recently used identities (max 5) */
   identityHistory: string[];
+
+  /** Popover open state (for keyboard shortcut control) */
+  popoverOpen: boolean;
+
+  /** Set popover open state */
+  setPopoverOpen: (open: boolean) => void;
 }
 
 const IdentityContext = createContext<IdentityContextType | undefined>(undefined);
@@ -30,6 +36,7 @@ const MAX_HISTORY_SIZE = 5;
 export function IdentityProvider({ children }: { children: ReactNode }) {
   const [currentIdentity, setCurrentIdentityState] = useState<string | null>(null);
   const [identityHistory, setIdentityHistory] = useState<string[]>([]);
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -88,6 +95,8 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
         setIdentity,
         clearIdentity,
         identityHistory,
+        popoverOpen,
+        setPopoverOpen,
       }}
     >
       {children}
