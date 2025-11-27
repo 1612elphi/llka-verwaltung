@@ -18,7 +18,7 @@ import {
   KeyboardShortcutsProvider,
   useKeyboardShortcuts,
 } from '@/hooks/use-keyboard-shortcuts';
-import { useCommandMenu } from '@/hooks/use-command-menu';
+import { CommandMenuProvider, useCommandMenu } from '@/hooks/use-command-menu';
 import { KeyboardShortcutsReferenceProvider } from '@/components/keyboard-shortcuts/keyboard-shortcuts-reference';
 
 /**
@@ -66,19 +66,21 @@ export default function DashboardLayout({
       <KeyboardShortcutsReferenceProvider>
         <IdentityProvider>
           <SequentialModeProvider>
-            <QuickFindProvider>
-              <div className="flex h-screen flex-col">
-                <Navbar />
-                <main className="flex-1 overflow-y-auto pt-16">
-                  {children}
-                </main>
-                <GlobalCommandMenu />
-                <QuickFindModal />
-                <SequentialModeModal />
-                <RealtimeStatus />
-                <KeyboardShortcutBridge />
-              </div>
-            </QuickFindProvider>
+            <CommandMenuProvider>
+              <QuickFindProvider>
+                <div className="flex h-screen flex-col">
+                  <Navbar />
+                  <main className="flex-1 overflow-y-auto pt-16">
+                    {children}
+                  </main>
+                  <GlobalCommandMenu />
+                  <QuickFindModal />
+                  <SequentialModeModal />
+                  <RealtimeStatus />
+                  <KeyboardShortcutBridge />
+                </div>
+              </QuickFindProvider>
+            </CommandMenuProvider>
           </SequentialModeProvider>
         </IdentityProvider>
       </KeyboardShortcutsReferenceProvider>
