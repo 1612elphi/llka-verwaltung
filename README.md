@@ -1,4 +1,4 @@
-# LeihLokal Verwaltung
+# leih.lokal Verwaltung
 
 Modern library management system built with Next.js 15, React 19, and PocketBase.
 
@@ -128,38 +128,6 @@ Then, serve `out/` as static files.
 - `npm run type-check` - Run TypeScript compiler check
 - `npm run test` - Run unit tests
 - `npm run test:e2e` - Run E2E tests
-
-## Features
-
-### Phase 1 (Current) ✅
-
-- [x] Project setup with Next.js 15 + TypeScript
-- [x] Shadcn/ui component library
-- [x] PocketBase client integration
-- [x] Authentication system
-- [x] Base layout with navigation
-- [x] Placeholder pages for all routes
-- [x] Type definitions for all entities
-- [x] Utility functions and constants
-
-### Phase 2 (Next)
-
-- [ ] Reusable data table component
-- [ ] Customer CRUD operations
-- [ ] Item CRUD operations
-- [ ] Rental CRUD operations
-- [ ] Reservation CRUD operations
-
-### Phase 3
-
-- [ ] Dashboard with sticky notes
-- [ ] Statistics charts
-
-### Phase 4
-
-- [ ] Advanced settings
-- [ ] Application logs
-- [ ] PWA enhancements
 
 ## Development Guidelines
 

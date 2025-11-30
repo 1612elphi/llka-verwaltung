@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   // Required for static export
   images: {
     unoptimized: true,
-  },
+  }, 
 };
 
 export default nextConfig;

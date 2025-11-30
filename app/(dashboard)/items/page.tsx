@@ -663,7 +663,9 @@ export default function ItemsPage() {
                   <tr
                     key={item.id}
                     onClick={() => handleRowClick(item)}
-                    className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                    className={`border-b hover:bg-muted/50 transition-colors cursor-pointer ${
+                      item.status !== 'instock' ? 'text-muted-foreground bg-muted' : ''
+                    }`}
                   >
                     {columnVisibility.getOrderedColumns(true).map((columnId) => renderBodyCell(columnId, item))}
                   </tr>

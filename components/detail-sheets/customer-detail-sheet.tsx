@@ -10,7 +10,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { PencilIcon, SaveIcon, XIcon, MailIcon, PhoneIcon, MapPinIcon, CalendarIcon, Trash2Icon, UserIcon, PaletteIcon, Heart } from 'lucide-react';
+import { PencilIcon, SaveIcon, XIcon, MailIcon, PhoneIcon, MapPinIcon, CalendarIcon, Trash2Icon, UserIcon, PaletteIcon, Heart, PrinterIcon } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -35,6 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import { collections } from '@/lib/pocketbase/client';
 import { formatDate, formatCurrency, calculateRentalStatus, dateToLocalString, localStringToDate } from '@/lib/utils/formatting';
 import { getRentalStatusLabel } from '@/lib/constants/statuses';
+import { generateCustomerPrintContent } from '@/components/print/customer-print-content';
 import type { Customer, CustomerFormData, Rental, RentalExpanded, Reservation, ReservationExpanded, HighlightColor } from '@/types';
 
 // Validation schema
@@ -327,6 +328,35 @@ export function CustomerDetailSheet({
         {color}
       </Badge>
     );
+  };
+
+  const handlePrint = () => {
+    if (!customer) return;
+
+    try {
+      const printContent = generateCustomerPrintContent({
+        customer,
+        rentals,
+        reservations,
+      });
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+
+        // Wait for content to load before printing
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      } else {
+        toast.error('Popup-Fenster wurde blockiert. Bitte erlauben Sie Pop-ups für diese Seite.');
+      }
+    } catch (err) {
+      console.error('Error generating print content:', err);
+      toast.error('Fehler beim Erstellen des Druckdokuments');
+    }
   };
 
   return (
@@ -957,13 +987,22 @@ export function CustomerDetailSheet({
                     Löschen
                   </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditMode(true)}
-                >
-                  <PencilIcon className="size-4 mr-2" />
-                  Bearbeiten
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handlePrint}
+                  >
+                    <PrinterIcon className="size-4 mr-2" />
+                    Drucken
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditMode(true)}
+                  >
+                    <PencilIcon className="size-4 mr-2" />
+                    Bearbeiten
+                  </Button>
+                </div>
               </div>
             </SheetFooter>
           )}
