@@ -187,7 +187,7 @@ export function TodaysReservationsSection({
       <div className="p-3 rounded-lg border bg-muted/50">
         {/* OTP Display - Prominent */}
         {reservation.otp && (
-          <div className="mb-3 bg-gradient-to-r from-red-50 to-indigo-50 border border-red-300 rounded-md p-3">
+          <div className="mb-3 bg-gradient-to-r from-red-200 to-red-50 border border-red-300 rounded-md p-3">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold text-red-600 uppercase">
                 Abholcode
