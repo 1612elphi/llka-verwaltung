@@ -335,7 +335,7 @@ export function ReservationDetailSheet({
 
           {/* OTP Display - Prominent Section */}
           {!isNewReservation && reservation?.otp && (
-            <div className="mx-6 mb-6 bg-gradient-to-r from-red-50 to-indigo-50 border-2 border-red-300 rounded-lg p-6 shadow-sm">
+            <div className="mx-6 mb-6 bg-gradient-to-r from-red-200 to-red-50 border-2 border-red-300 rounded-lg p-6 shadow-sm">
               <div className="text-center">
                 <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">
                   Abholcode

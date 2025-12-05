@@ -236,7 +236,7 @@ export const rentalsFilterConfig: EntityFilterConfig = {
 // ============================================================================
 
 export const reservationsFilterConfig: EntityFilterConfig = {
-  searchFields: ['customer_name', 'customer_phone', 'customer_iid'],
+  searchFields: ['customer_name', 'customer_phone', 'customer_iid', 'otp'],
 
   statusFilters: [
     {

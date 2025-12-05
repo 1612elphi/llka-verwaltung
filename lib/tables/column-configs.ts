@@ -23,86 +23,86 @@ export interface EntityColumnConfig {
 export const customersColumnConfig: EntityColumnConfig = {
   columns: [
     {
-      id: 'iid',
-      label: 'ID',
+      id: "iid",
+      label: "ID",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'name',
-      label: 'Name',
+      id: "name",
+      label: "Name",
       defaultVisible: true,
       sortable: true,
-      sortField: 'firstname', // Sort by firstname
+      sortField: "firstname", // Sort by firstname
     },
     {
-      id: 'email',
-      label: 'Email',
-      defaultVisible: true,
-      sortable: true,
-    },
-    {
-      id: 'newsletter',
-      label: 'Newsletter',
+      id: "email",
+      label: "Email",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'registered_on',
-      label: 'Registriert',
+      id: "newsletter",
+      label: "Newsletter",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'active_rentals',
-      label: 'Aktive Ausleihen',
+      id: "registered_on",
+      label: "Registriert",
       defaultVisible: true,
-      sortable: false, // Computed from customer_rentals view
+      sortable: true,
     },
     {
-      id: 'total_rentals',
-      label: 'Alle Ausleihen',
+      id: "active_rentals",
+      label: "Aktive Ausleihen",
       defaultVisible: true,
       sortable: false, // Computed from customer_rentals view
     },
     {
-      id: 'phone',
-      label: 'Telefon',
+      id: "total_rentals",
+      label: "Alle Ausleihen",
+      defaultVisible: true,
+      sortable: false, // Computed from customer_rentals view
+    },
+    {
+      id: "phone",
+      label: "Telefon",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'street',
-      label: 'Straße',
+      id: "street",
+      label: "Straße",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'postal_code',
-      label: 'PLZ',
+      id: "postal_code",
+      label: "PLZ",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'city',
-      label: 'Stadt',
+      id: "city",
+      label: "Stadt",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'renewed_on',
-      label: 'Verlängert',
+      id: "renewed_on",
+      label: "Verlängert",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'remark',
-      label: 'Bemerkung',
+      id: "remark",
+      label: "Bemerkung",
       defaultVisible: false,
       sortable: true,
     },
   ],
-  defaultSort: '-iid', // Sort by ID, highest to lowest
+  defaultSort: "-iid", // Sort by ID, highest to lowest
 };
 
 // ============================================================================
@@ -112,103 +112,103 @@ export const customersColumnConfig: EntityColumnConfig = {
 export const itemsColumnConfig: EntityColumnConfig = {
   columns: [
     {
-      id: 'iid',
-      label: 'ID',
+      id: "iid",
+      label: "ID",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'images',
-      label: 'Bild',
+      id: "images",
+      label: "Bild",
       defaultVisible: true,
       sortable: false, // Array field
     },
     {
-      id: 'name',
-      label: 'Name',
+      id: "name",
+      label: "Name",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'brand',
-      label: 'Marke',
+      id: "brand",
+      label: "Marke",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'model',
-      label: 'Modell',
+      id: "model",
+      label: "Modell",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'deposit',
-      label: 'Pfand',
+      id: "deposit",
+      label: "Pfand",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'parts',
-      label: 'Teile',
+      id: "parts",
+      label: "Teile",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'copies',
-      label: 'Exemplare',
+      id: "copies",
+      label: "Exemplare",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'total_rentals',
-      label: 'Alle Ausleihen',
+      id: "total_rentals",
+      label: "Alle Ausleihen",
       defaultVisible: true,
       sortable: false, // Stats computed client-side, cannot sort server-side
     },
     {
-      id: 'status',
-      label: 'Status',
+      id: "status",
+      label: "Status",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'category',
-      label: 'Kategorie',
+      id: "category",
+      label: "Kategorie",
       defaultVisible: false,
       sortable: false, // Category is an array
     },
     {
-      id: 'description',
-      label: 'Beschreibung',
+      id: "description",
+      label: "Beschreibung",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'packaging',
-      label: 'Verpackung',
+      id: "packaging",
+      label: "Verpackung",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'manual',
-      label: 'Anleitung',
+      id: "manual",
+      label: "Anleitung",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'internal_note',
-      label: 'Interne Notiz',
+      id: "internal_note",
+      label: "Interne Notiz",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'added_on',
-      label: 'Hinzugefügt',
+      id: "added_on",
+      label: "Hinzugefügt",
       defaultVisible: false,
       sortable: true,
     },
   ],
-  defaultSort: 'name', // Sort by name, A to Z
+  defaultSort: "name", // Sort by name, A to Z
 };
 
 // ============================================================================
@@ -218,80 +218,80 @@ export const itemsColumnConfig: EntityColumnConfig = {
 export const rentalsColumnConfig: EntityColumnConfig = {
   columns: [
     {
-      id: 'customer',
-      label: 'Nutzer:in',
+      id: "customer",
+      label: "Nutzer:in",
       defaultVisible: true,
       sortable: true,
-      sortField: 'customer.firstname',
+      sortField: "customer.firstname",
     },
     {
-      id: 'items',
-      label: 'Gegenstände',
+      id: "items",
+      label: "Gegenstände",
       defaultVisible: true,
       sortable: false, // Array field
     },
     {
-      id: 'rented_on',
-      label: 'Ausgeliehen',
+      id: "rented_on",
+      label: "Ausgeliehen",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'employee',
-      label: 'Mitarbeiter Ausgabe',
+      id: "employee",
+      label: "Mitarbeiter Ausgabe",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'deposit',
-      label: 'Pfand gegeben',
+      id: "deposit",
+      label: "Pfand gegeben",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'expected_on',
-      label: 'Erwartet',
+      id: "expected_on",
+      label: "Erwartet",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'returned_on',
-      label: 'Zurück',
+      id: "returned_on",
+      label: "Zurück",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'employee_back',
-      label: 'Mitarbeiter Rücknahme',
+      id: "employee_back",
+      label: "Mitarbeiter Rücknahme",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'deposit_back',
-      label: 'Pfand zurück',
+      id: "deposit_back",
+      label: "Pfand zurück",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'status',
-      label: 'Status',
+      id: "status",
+      label: "Status",
       defaultVisible: true,
       sortable: false, // Computed client-side
     },
     {
-      id: 'extended_on',
-      label: 'Verlängert am',
+      id: "extended_on",
+      label: "Verlängert am",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'remark',
-      label: 'Bemerkung',
+      id: "remark",
+      label: "Bemerkung",
       defaultVisible: false,
       sortable: true,
     },
   ],
-  defaultSort: 'expected_on', // Sort by expected return date, closest to furthest
+  defaultSort: "-rented_on", // Sort by expected return date, closest to furthest
 };
 
 // ============================================================================
@@ -301,80 +301,80 @@ export const rentalsColumnConfig: EntityColumnConfig = {
 export const reservationsColumnConfig: EntityColumnConfig = {
   columns: [
     {
-      id: 'is_new_customer',
-      label: 'Neunutzer?',
+      id: "is_new_customer",
+      label: "Neunutzer?",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'customer_name',
-      label: 'Nutzer:in',
+      id: "customer_name",
+      label: "Nutzer:in",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'items',
-      label: 'Gegenstände',
+      id: "items",
+      label: "Gegenstände",
       defaultVisible: true,
       sortable: false, // Array field
     },
     {
-      id: 'pickup',
-      label: 'Abholdatum',
+      id: "pickup",
+      label: "Abholdatum",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'comments',
-      label: 'Kommentare',
+      id: "comments",
+      label: "Kommentare",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'status',
-      label: 'Status',
+      id: "status",
+      label: "Status",
       defaultVisible: true,
       sortable: true,
-      sortField: 'done',
+      sortField: "done",
     },
     {
-      id: 'actions',
-      label: 'Aktionen',
+      id: "actions",
+      label: "Aktionen",
       defaultVisible: true,
       sortable: false,
     },
     {
-      id: 'on_premises',
-      label: 'Vor Ort',
-      defaultVisible: true,
+      id: "on_premises",
+      label: "Vor Ort",
+      defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'otp',
-      label: 'OTP',
+      id: "otp",
+      label: "OTP",
       defaultVisible: false,
       sortable: false,
     },
     {
-      id: 'customer_phone',
-      label: 'Telefon',
+      id: "customer_phone",
+      label: "Telefon",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'customer_email',
-      label: 'Email',
+      id: "customer_email",
+      label: "Email",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'customer_iid',
-      label: 'Nutzer-ID',
+      id: "customer_iid",
+      label: "Nutzer-ID",
       defaultVisible: false,
       sortable: true,
     },
   ],
-  defaultSort: '-created',
+  defaultSort: "-created",
 };
 
 // ============================================================================
@@ -384,31 +384,31 @@ export const reservationsColumnConfig: EntityColumnConfig = {
 export const logsColumnConfig: EntityColumnConfig = {
   columns: [
     {
-      id: 'created',
-      label: 'Zeitstempel',
+      id: "created",
+      label: "Zeitstempel",
       defaultVisible: true,
       sortable: true,
     },
     {
-      id: 'level',
-      label: 'Level',
+      id: "level",
+      label: "Level",
       defaultVisible: false,
       sortable: true,
     },
     {
-      id: 'method',
-      label: 'Request-Typ',
+      id: "method",
+      label: "Request-Typ",
       defaultVisible: true,
       sortable: false, // Field is nested in data object
     },
     {
-      id: 'message',
-      label: 'Nachricht',
+      id: "message",
+      label: "Nachricht",
       defaultVisible: true,
       sortable: false, // Text field, not useful to sort
     },
   ],
-  defaultSort: '-created', // Sort by created, newest to oldest
+  defaultSort: "-created", // Sort by created, newest to oldest
 };
 
 // ============================================================================
@@ -419,18 +419,18 @@ export const logsColumnConfig: EntityColumnConfig = {
  * Get column config for entity type
  */
 export function getColumnConfig(
-  entity: 'customers' | 'items' | 'rentals' | 'reservations' | 'logs'
+  entity: "customers" | "items" | "rentals" | "reservations" | "logs",
 ): EntityColumnConfig {
   switch (entity) {
-    case 'customers':
+    case "customers":
       return customersColumnConfig;
-    case 'items':
+    case "items":
       return itemsColumnConfig;
-    case 'rentals':
+    case "rentals":
       return rentalsColumnConfig;
-    case 'reservations':
+    case "reservations":
       return reservationsColumnConfig;
-    case 'logs':
+    case "logs":
       return logsColumnConfig;
   }
 }
